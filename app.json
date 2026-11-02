@@ -1,0 +1,55 @@
+{
+  "expo": {
+    "name": "Luuma",
+    "slug": "luuma",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/Icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/logo-mark.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FFFFFF"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "app.luuma.mobile",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "Luuma utilise le micro pour vos messages vocaux.",
+        "NSCameraUsageDescription": "Luuma utilise l'appareil photo pour photographier les colis.",
+        "NSPhotoLibraryUsageDescription": "Luuma accède à vos photos pour vos produits et colis."
+      }
+    },
+    "android": {
+      "package": "app.luuma.mobile",
+      "adaptiveIcon": {
+        "backgroundColor": "#0B5C38",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "RECORD_AUDIO",
+        "CAMERA",
+        "READ_MEDIA_IMAGES",
+        "POST_NOTIFICATIONS",
+        "VIBRATE"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/logo-mark.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      "expo-secure-store",
+      "expo-audio",
+      "expo-image",
+      "expo-notifications",
+      "expo-image-picker",
+      "expo-asset",
+      "expo-video"
+    ]
+  }
+}
