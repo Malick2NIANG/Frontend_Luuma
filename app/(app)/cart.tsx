@@ -9,6 +9,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { colors } from '@/constants/colors';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
 import { formatEur, formatWeight, formatXof } from '@/lib/format';
+import { useAppLanguage } from '@/lib/appLanguage';
 import {
   cartByMerchant,
   cartSubtotalEur,
@@ -18,6 +19,7 @@ import {
 } from '@/store/cart.store';
 
 export default function CartScreen() {
+  const { t } = useAppLanguage();
   const router = useRouter();
   const goBack = useGoBack('/(app)/(tabs)');
   // Le panier engage : on demande le compte ici, pas à l'entrée de l'app.
@@ -47,9 +49,12 @@ export default function CartScreen() {
         <Header onBack={goBack} />
         <EmptyState
           icon="cart-outline"
-          title="Votre panier est vide"
-          description="Parcourez le catalogue et ajoutez des produits de plusieurs commerçants."
-          actionLabel="Voir le catalogue"
+          title={t('Votre panier est vide', 'Your cart is empty')}
+          description={t(
+            'Parcourez le catalogue et ajoutez des produits de plusieurs commerçants.',
+            'Browse the catalog and add products from different shops.',
+          )}
+          actionLabel={t('Voir le catalogue', 'Browse the catalog')}
           onAction={() => router.replace('/(app)/(tabs)')}
         />
       </SafeAreaView>
@@ -67,8 +72,10 @@ export default function CartScreen() {
           <View className="mb-4 flex-row items-start gap-2 rounded-xl bg-blue-50 px-3 py-2.5">
             <Ionicons name="information-circle-outline" size={17} color="#1D4ED8" />
             <Text className="flex-1 text-xs text-blue-800">
-              Votre commande regroupe {groups.length} commerçants. Chacun
-              remettra son colis au même GP.
+              {t(
+                `Votre commande regroupe ${groups.length} commerçants. Chacun remettra son colis au même GP.`,
+                `Your order includes ${groups.length} shops. Each one will hand their package to the same personal shopper.`,
+              )}
             </Text>
           </View>
         )}
@@ -99,19 +106,22 @@ export default function CartScreen() {
 
         <View className="rounded-2xl bg-gray-50 p-4">
           <View className="flex-row justify-between py-1">
-            <Text className="text-sm text-gray-700">Sous-total produits</Text>
+            <Text className="text-sm text-gray-700">{t('Sous-total produits', 'Products subtotal')}</Text>
             <Text className="text-sm font-semibold text-gray-900">
               {formatEur(subtotalEur)}
             </Text>
           </View>
           <View className="flex-row justify-between py-1">
-            <Text className="text-sm text-gray-700">Poids total</Text>
+            <Text className="text-sm text-gray-700">{t('Poids total', 'Total weight')}</Text>
             <Text className="text-sm font-semibold text-gray-900">
               {formatWeight(totalWeight)}
             </Text>
           </View>
           <Text className="mt-2 text-xs text-gray-500">
-            Les frais de transport dépendent du GP choisi à l'étape suivante.
+            {t(
+              "Les frais de transport dépendent du GP choisi à l'étape suivante.",
+              'Shipping costs depend on the personal shopper you choose next.',
+            )}
           </Text>
         </View>
       </ScrollView>
@@ -121,7 +131,7 @@ export default function CartScreen() {
           fullWidth
           onPress={() => router.push('/(app)/trips')}
         >
-          Choisir un GP
+          {t('Choisir un GP', 'Choose a personal shopper')}
         </Button>
       </View>
     </SafeAreaView>
@@ -145,6 +155,7 @@ function Header({
   onBack: () => void;
   onClear?: () => void;
 }) {
+  const { t } = useAppLanguage();
   return (
     <View className="flex-row items-center justify-between px-4 py-2">
       <View className="flex-row items-center gap-3">
@@ -154,12 +165,12 @@ function Header({
         >
           <Ionicons name="arrow-back" size={20} color={colors.text} />
         </Pressable>
-        <Text className="text-xl font-bold text-gray-900">Panier</Text>
+        <Text className="text-xl font-bold text-gray-900">{t('Panier', 'Cart')}</Text>
       </View>
 
       {onClear && (
         <Pressable onPress={onClear} className="px-2 py-1">
-          <Text className="text-sm text-red-600">Vider</Text>
+          <Text className="text-sm text-red-600">{t('Vider', 'Clear')}</Text>
         </Pressable>
       )}
     </View>
@@ -177,6 +188,8 @@ function CartRow({
   onIncrement: () => void;
   onRemove: () => void;
 }) {
+  const { t } = useAppLanguage();
+
   return (
     <View className="mb-2 flex-row items-center gap-3 rounded-2xl border border-gray-100 p-2.5">
       {item.image ? (
@@ -207,7 +220,7 @@ function CartRow({
 
         {item.measurements ? (
           <Text className="mt-0.5 text-[11px] text-gray-600">
-            Sur mesure · {Object.keys(item.measurements).length} mesures
+            {t('Sur mesure', 'Custom fit')} · {Object.keys(item.measurements).length} {t('mesures', 'measurements')}
           </Text>
         ) : null}
 

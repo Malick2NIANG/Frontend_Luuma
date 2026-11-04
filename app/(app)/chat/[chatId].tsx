@@ -22,11 +22,13 @@ import { useChatMessages, type ChatMessage } from '@/hooks/useChat';
 import { useConversations } from '@/hooks/useDirectChat';
 import { useUpload } from '@/hooks/useUpload';
 import { useVoiceRecorder } from '@/hooks/useVoiceRecorder';
+import { useAppLanguage } from '@/lib/appLanguage';
 
 /** En dessous, c'est un appui involontaire sur le bouton micro. */
 const MIN_VOICE_DURATION_MS = 1000;
 
 export default function ChatScreen() {
+  const { t } = useAppLanguage();
   const { chatId } = useLocalSearchParams<{ chatId: string }>();
   const router = useRouter();
   const goBack = useGoBack('/(app)/(tabs)/messages');
@@ -75,7 +77,7 @@ export default function ChatScreen() {
     try {
       await send({ type: 'TEXT', content });
     } catch {
-      setSendError("Le message n'a pas pu être envoyé.");
+      setSendError(t("Le message n'a pas pu être envoyé.", 'The message could not be sent.'));
       setDraft(content); // Ne pas perdre ce que l'utilisateur a écrit.
     }
   };
@@ -85,7 +87,7 @@ export default function ChatScreen() {
     const granted = await recorder.start();
     if (!granted) {
       setSendError(
-        "Autorisez l'accès au micro dans les réglages pour envoyer un vocal.",
+        t("Autorisez l'accès au micro dans les réglages pour envoyer un vocal.", 'Allow microphone access in Settings to send a voice message.'),
       );
       return;
     }
@@ -98,7 +100,7 @@ export default function ChatScreen() {
     if (!recording) return;
 
     if (recording.durationMs < MIN_VOICE_DURATION_MS) {
-      setSendError('Message trop court.');
+      setSendError(t('Message trop court.', 'Message is too short.'));
       return;
     }
 
@@ -111,7 +113,7 @@ export default function ChatScreen() {
     });
 
     if (!uploaded) {
-      setSendError("Le vocal n'a pas pu être envoyé.");
+      setSendError(t("Le vocal n'a pas pu être envoyé.", 'Voice message could not be sent.'));
       return;
     }
 
@@ -122,7 +124,7 @@ export default function ChatScreen() {
         duration: Math.round(recording.durationMs / 1000),
       });
     } catch {
-      setSendError("Le vocal n'a pas pu être envoyé.");
+      setSendError(t("Le vocal n'a pas pu être envoyé.", 'Voice message could not be sent.'));
     }
   };
 
@@ -137,7 +139,7 @@ export default function ChatScreen() {
         <Pressable
           onPress={goBack}
           accessibilityRole="button"
-          accessibilityLabel="Retour"
+          accessibilityLabel={t('Retour', 'Back')}
           className="h-10 w-10 items-center justify-center rounded-full bg-gray-100"
         >
           <Ionicons name="arrow-back" size={20} color={colors.text} />
@@ -148,7 +150,7 @@ export default function ChatScreen() {
               numberOfLines={1}
               className="shrink text-lg font-bold text-gray-900"
             >
-              {conversation?.title ?? 'Conversation'}
+              {conversation?.title ?? t('Conversation', 'Conversation')}
             </Text>
             {conversation?.counterpartRole && (
               <RoleMark type={conversation.counterpartRole} size={13} />
@@ -156,17 +158,24 @@ export default function ChatScreen() {
           </View>
           <Text className="text-xs text-gray-500">
             {someoneTyping
-              ? 'En train d\'écrire…'
+              ? t("En train d'écrire…", 'Typing…')
               : !connected
-                ? 'Reconnexion…'
+                ? t('Reconnexion…', 'Reconnecting…')
                 : // « Client, commerçants et GP » ne vaut que pour un fil de
                   // commande. Sur une conversation directe, c'est faux : on est
                   // deux, et l'affirmer brouillait justement ce qu'on cherche
                   // à savoir — à qui on parle.
                   conversation?.kind === 'ORDER'
-                  ? 'Client, commerçants et GP'
+                  ? t('Client, commerçants et GP', 'Customer, shops, and personal shopper')
                   : (conversation?.counterpartRole
-                      ? ROLE_LABELS[conversation.counterpartRole]
+                      ? t(
+                          ROLE_LABELS[conversation.counterpartRole],
+                          conversation.counterpartRole === 'MERCHANT'
+                            ? 'Shop'
+                            : conversation.counterpartRole === 'GP'
+                              ? 'Personal shopper'
+                              : 'Customer',
+                        )
                       : '')}
           </Text>
         </View>
@@ -190,8 +199,11 @@ export default function ChatScreen() {
         ) : messages.length === 0 ? (
           <EmptyState
             icon="chatbubbles-outline"
-            title="Aucun message"
-            description="Posez vos questions au commerçant ou au GP — par écrit ou en vocal."
+            title={t('Aucun message', 'No messages yet')}
+            description={t(
+              'Posez vos questions au commerçant ou au GP — par écrit ou en vocal.',
+              'Ask the shop or personal shopper questions by text or voice message.',
+            )}
           />
         ) : (
           <FlatList
@@ -238,7 +250,7 @@ export default function ChatScreen() {
               <Text className="text-sm font-medium text-gray-900">
                 {formatRecordingTime(recorder.durationMs)}
               </Text>
-              <Text className="text-xs text-gray-500">Enregistrement…</Text>
+              <Text className="text-xs text-gray-500">{t('Enregistrement…', 'Recording…')}</Text>
             </View>
 
             <Pressable
@@ -257,7 +269,7 @@ export default function ChatScreen() {
                 setTyping(text.length > 0);
               }}
               onBlur={() => setTyping(false)}
-              placeholder="Votre message…"
+              placeholder={t('Votre message…', 'Your message…')}
               placeholderTextColor="#9CA3AF"
               multiline
               className="max-h-28 flex-1 rounded-2xl bg-gray-100 px-4 py-2.5 text-base text-gray-900"

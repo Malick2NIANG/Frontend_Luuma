@@ -21,6 +21,7 @@ import { colors } from '@/constants/colors';
 import { usePrice } from '@/hooks/useCurrency';
 import type { ProductDetail, ProductVariant } from '@/hooks/useCatalog';
 import { formatWeight, formatXof } from '@/lib/format';
+import { useAppLanguage } from '@/lib/appLanguage';
 
 /** Pas d'ajustement d'une longueur de tissu — l'unité d'achat réelle. */
 const LENGTH_STEP = 0.5;
@@ -56,6 +57,7 @@ export function AddToCartSheet({
   onConfirm,
 }: AddToCartSheetProps) {
   const price = usePrice();
+  const { t } = useAppLanguage();
 
   const isVariant = product.kind === 'VARIANT';
   const isCustom = product.kind === 'MADE_TO_ORDER';
@@ -77,23 +79,29 @@ export function AddToCartSheet({
 
   const unitPrice = variant?.price ?? product.price;
   const unitWeight = variant?.weight ?? product.weight;
-  const unit = product.unitLabel ?? 'unité';
+  const unit = product.unitLabel ?? t('unité', 'unit');
 
   /** Ce qui empêche encore de valider, dit en toutes lettres. */
   const blocker = useMemo(() => {
     if (isVariant) {
-      if (!variant) return 'Choisissez une taille';
-      if (variant.stock === 0) return 'Cette taille est épuisée';
+      if (!variant) return t('Choisissez une taille', 'Choose a size');
+      if (variant.stock === 0) return t('Cette taille est épuisée', 'This size is sold out');
       if (variant.stock !== null && variant.stock < quantity) {
-        return `Il ne reste que ${variant.stock} exemplaire(s)`;
+        return t(
+          `Il ne reste que ${variant.stock} exemplaire(s)`,
+          `Only ${variant.stock} item(s) left`,
+        );
       }
       return null;
     }
     if (isCustom && !measurementsComplete(product.requiredMeasurements, measurements)) {
-      return 'Renseignez toutes vos mesures';
+      return t('Renseignez toutes vos mesures', 'Enter all your measurements');
     }
     if (isByLength && quantity < (product.minQuantity ?? 0)) {
-      return `Minimum ${product.minQuantity} ${unit}`;
+      return t(
+        `Minimum ${product.minQuantity} ${unit}`,
+        `Minimum ${product.minQuantity} ${unit}`,
+      );
     }
     return null;
   }, [
@@ -106,6 +114,7 @@ export function AddToCartSheet({
     product.requiredMeasurements,
     product.minQuantity,
     unit,
+    t,
   ]);
 
   return (
@@ -118,7 +127,11 @@ export function AddToCartSheet({
             <Text numberOfLines={1} className="flex-1 text-[15px] font-bold text-gray-900">
               {product.name}
             </Text>
-            <Pressable onPress={onClose} hitSlop={10} accessibilityLabel="Fermer">
+            <Pressable
+              onPress={onClose}
+              hitSlop={10}
+              accessibilityLabel={t('Fermer', 'Close')}
+            >
               <Ionicons name="close" size={22} color={colors.text} />
             </Pressable>
           </View>
@@ -147,13 +160,15 @@ export function AddToCartSheet({
 
             <View className="py-5">
               <Text className="mb-2 text-sm font-semibold text-gray-900">
-                {isByLength ? `Longueur (${unit})` : 'Quantité'}
+                {isByLength
+                  ? t(`Longueur (${unit})`, `Length (${unit})`)
+                  : t('Quantité', 'Quantity')}
               </Text>
 
               <View className="flex-row items-center gap-4">
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel="Diminuer"
+                  accessibilityLabel={t('Diminuer', 'Decrease')}
                   onPress={() =>
                     setQuantity((q) =>
                       isByLength
@@ -187,7 +202,7 @@ export function AddToCartSheet({
 
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel="Augmenter"
+                  accessibilityLabel={t('Augmenter', 'Increase')}
                   onPress={() =>
                     setQuantity((q) => (isByLength ? q + LENGTH_STEP : q + 1))
                   }
@@ -199,23 +214,23 @@ export function AddToCartSheet({
 
               <View className="mt-5 rounded-2xl bg-gray-50 p-4">
                 <Row
-                  label="Sous-total"
+                  label={t('Sous-total', 'Subtotal')}
                   value={formatXof(unitPrice * quantity)}
                 />
                 {price.currency !== 'XOF' ? (
                   <Row
-                    label="Soit environ"
+                    label={t('Soit environ', 'Approximately')}
                     value={price.format(unitPrice * quantity)}
                     muted
                   />
                 ) : null}
                 <Row
-                  label="Poids total"
+                  label={t('Poids total', 'Total weight')}
                   value={formatWeight(unitWeight * quantity)}
                   muted
                 />
                 {variant ? (
-                  <Row label="Choix" value={describeVariant(variant)} muted />
+                  <Row label={t('Choix', 'Selection')} value={describeVariant(variant)} muted />
                 ) : null}
               </View>
             </View>
@@ -249,7 +264,7 @@ export function AddToCartSheet({
                   blocker ? 'text-gray-400' : 'text-white',
                 ].join(' ')}
               >
-                Ajouter au panier
+                {t('Ajouter au panier', 'Add to cart')}
               </Text>
             </Pressable>
           </View>

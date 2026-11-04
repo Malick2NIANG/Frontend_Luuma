@@ -7,7 +7,21 @@ import { ExpandableText } from '@/components/ui/ExpandableText';
 import { colors } from '@/constants/colors';
 import { CATEGORY_SHORT_LABELS } from '@/constants/categories';
 import { formatEur, formatWeight, formatXof } from '@/lib/format';
+import { useAppLanguage } from '@/lib/appLanguage';
 import type { FeedAuthor, FeedProduct } from '@/types/feed.types';
+
+const CATEGORY_LABELS_EN: Record<FeedProduct['category'], string> = {
+  VETEMENTS: 'Clothing',
+  CHAUSSURES: 'Shoes',
+  BIJOUX_ACCESSOIRES: 'Jewelry',
+  ALIMENTAIRE: 'Food',
+  COSMETIQUES: 'Cosmetics',
+  ARTISANAT_DECO: 'Crafts',
+  ENFANT_BEBE: 'Kids',
+  MAISON: 'Home',
+  LIVRES_CULTURE: 'Books',
+  AUTRE: 'Other',
+};
 
 export interface ProductPostProps {
   product: FeedProduct;
@@ -26,6 +40,7 @@ export interface ProductPostProps {
  */
 export function ProductPost({ product, author, publishedAt }: ProductPostProps) {
   const router = useRouter();
+  const { t } = useAppLanguage();
   const detailPath = `/(app)/products/${product.id}`;
 
   const openDetail = () => router.push(detailPath);
@@ -71,7 +86,12 @@ export function ProductPost({ product, author, publishedAt }: ProductPostProps) 
           {/* Le poids est mis au même rang que la catégorie parce qu'il est
               décisif ici : c'est lui qui fixe le prix du transport par le GP. */}
           <Tag icon="scale-outline" label={formatWeight(product.weight)} />
-          <Tag label={CATEGORY_SHORT_LABELS[product.category]} />
+          <Tag
+            label={t(
+              CATEGORY_SHORT_LABELS[product.category],
+              CATEGORY_LABELS_EN[product.category],
+            )}
+          />
           {product.subCategory ? <Tag label={product.subCategory} /> : null}
         </View>
       </Pressable>
@@ -79,10 +99,12 @@ export function ProductPost({ product, author, publishedAt }: ProductPostProps) 
       <Pressable
         onPress={openDetail}
         accessibilityRole="button"
-        accessibilityLabel={`Voir ${product.name}`}
+        accessibilityLabel={t(`Voir ${product.name}`, `View ${product.name}`)}
         className="mx-3 mb-1 mt-2.5 flex-row items-center justify-center gap-1.5 rounded-lg bg-primary py-2.5"
       >
-        <Text className="text-[13px] font-bold text-white">Voir plus</Text>
+        <Text className="text-[13px] font-bold text-white">
+          {t('Voir plus', 'View more')}
+        </Text>
         <Ionicons name="chevron-forward" size={14} color={colors.white} />
       </Pressable>
     </View>

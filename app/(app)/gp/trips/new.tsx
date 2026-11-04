@@ -20,6 +20,7 @@ import { useRequireAuth } from '@/hooks/useRequireAuth';
 import { api } from '@/lib/api';
 import { apiErrorMessage } from '@/lib/apiError';
 import { parseDecimal } from '@/lib/numbers';
+import { useAppLanguage } from '@/lib/appLanguage';
 
 /**
  * Destinations principales de la diaspora sénégalaise.
@@ -89,6 +90,7 @@ function SectionTitle({ children }: { children: string }) {
 }
 
 export default function NewTripScreen() {
+  const { t } = useAppLanguage();
   const router = useRouter();
   const goBack = useGoBack('/(app)/(tabs)/gp');
   const queryClient = useQueryClient();
@@ -122,7 +124,7 @@ export default function NewTripScreen() {
       // d'exceptions emballe la réponse de NestJS) : `apiErrorMessage` les en
       // extrait, et garde le message propre à cet écran quand il n'y en a pas.
       setError(
-        apiErrorMessage(caught, 'La publication du trajet a échoué. Réessayez.'),
+        apiErrorMessage(caught, t('La publication du trajet a échoué. Réessayez.', 'Trip publication failed. Please try again.')),
       );
     },
   });
@@ -132,7 +134,7 @@ export default function NewTripScreen() {
   const ceiling = stats?.maxWeightPerTrip ?? null;
 
   const validate = (): string | null => {
-    if (!originCity.trim()) return 'Indiquez la ville de départ.';
+    if (!originCity.trim()) return t('Indiquez la ville de départ.', 'Enter the departure city.');
 
     const city =
       destIndex !== null ? DESTINATIONS[destIndex].city : customCity.trim();
@@ -141,36 +143,36 @@ export default function NewTripScreen() {
         ? DESTINATIONS[destIndex].country
         : customCountry.trim().toUpperCase();
 
-    if (!city) return "Indiquez la ville d'arrivée.";
+    if (!city) return t("Indiquez la ville d'arrivée.", 'Enter the destination city.');
     if (!/^[A-Z]{2}$/.test(country)) {
-      return 'Le code pays doit faire deux lettres (FR, BE, IT…).';
+      return t('Le code pays doit faire deux lettres (FR, BE, IT…).', 'The country code must be two letters (FR, BE, IT…).');
     }
 
     const departure = toIsoDate(departureDate);
-    if (!departure) return 'La date de départ doit être au format AAAA-MM-JJ.';
+    if (!departure) return t('La date de départ doit être au format AAAA-MM-JJ.', 'Enter the departure date in YYYY-MM-DD format.');
     if (new Date(departure).getTime() <= Date.now()) {
-      return 'La date de départ doit être dans le futur.';
+      return t('La date de départ doit être dans le futur.', 'The departure date must be in the future.');
     }
 
     if (arrivalDate.trim()) {
       const arrival = toIsoDate(arrivalDate);
-      if (!arrival) return "La date d'arrivée doit être au format AAAA-MM-JJ.";
+      if (!arrival) return t("La date d'arrivée doit être au format AAAA-MM-JJ.", 'Enter the arrival date in YYYY-MM-DD format.');
       if (new Date(arrival) < new Date(departure)) {
-        return "L'arrivée ne peut pas précéder le départ.";
+        return t("L'arrivée ne peut pas précéder le départ.", 'Arrival cannot be before departure.');
       }
     }
 
     const price = parseDecimal(pricePerKg);
     if (price === null || price <= 0) {
-      return 'Indiquez un prix au kilo supérieur à 0.';
+      return t('Indiquez un prix au kilo supérieur à 0.', 'Enter a price per kilogram greater than 0.');
     }
 
     const weight = parseDecimal(maxWeight);
     if (weight === null || weight <= 0) {
-      return 'Indiquez les kilos que vous acceptez de transporter.';
+      return t('Indiquez les kilos que vous acceptez de transporter.', 'Enter how many kilograms you are willing to carry.');
     }
     if (ceiling !== null && weight > ceiling) {
-      return `Votre palier actuel est de ${ceiling} kg par voyage.`;
+      return t(`Votre palier actuel est de ${ceiling} kg par voyage.`, `Your current limit is ${ceiling} kg per trip.`);
     }
 
     return null;
@@ -216,12 +218,12 @@ export default function NewTripScreen() {
           onPress={goBack}
           hitSlop={10}
           accessibilityRole="button"
-          accessibilityLabel="Retour"
+          accessibilityLabel={t('Retour', 'Back')}
         >
           <Ionicons name="close" size={24} color={colors.text} />
         </Pressable>
         <Text className="flex-1 text-lg font-bold text-gray-900">
-          Nouveau trajet
+          {t('Nouveau trajet', 'New trip')}
         </Text>
       </View>
 
@@ -233,7 +235,7 @@ export default function NewTripScreen() {
           contentContainerClassName="px-3.5 pb-10"
           keyboardShouldPersistTaps="handled"
         >
-          <SectionTitle>Départ</SectionTitle>
+          <SectionTitle>{t('Départ', 'Departure')}</SectionTitle>
           <View className="flex-row flex-wrap gap-2">
             {ORIGINS.map((city) => (
               <Chip
@@ -246,19 +248,19 @@ export default function NewTripScreen() {
           </View>
           <View className="mt-3">
             <Input
-              label="Ou une autre ville"
+              label={t('Ou une autre ville', 'Or another city')}
               placeholder="Kaolack"
               value={ORIGINS.includes(originCity) ? '' : originCity}
               onChangeText={setOriginCity}
             />
           </View>
 
-          <SectionTitle>Arrivée</SectionTitle>
+          <SectionTitle>{t('Arrivée', 'Arrival')}</SectionTitle>
           <View className="flex-row flex-wrap gap-2">
             {DESTINATIONS.map((destination, index) => (
               <Chip
                 key={`${destination.city}-${destination.country}`}
-                label={destination.label}
+                label={t(destination.label, destination.label === 'Londres' ? 'London' : destination.label === 'Montréal' ? 'Montreal' : destination.label)}
                 active={destIndex === index}
                 onPress={() => {
                   setDestIndex(index);
@@ -268,7 +270,7 @@ export default function NewTripScreen() {
               />
             ))}
             <Chip
-              label="Autre…"
+              label={t('Autre…', 'Other…')}
               active={destIndex === null}
               onPress={() => setDestIndex(null)}
             />
@@ -277,14 +279,14 @@ export default function NewTripScreen() {
           {destIndex === null ? (
             <View className="mt-3 gap-4">
               <Input
-                label="Ville d'arrivée"
+                label={t("Ville d'arrivée", 'Arrival city')}
                 placeholder="Genève"
                 value={customCity}
                 onChangeText={setCustomCity}
               />
               <View>
                 <Input
-                  label="Code pays"
+                  label={t('Code pays', 'Country code')}
                   placeholder="CH"
                   autoCapitalize="characters"
                   maxLength={2}
@@ -292,23 +294,23 @@ export default function NewTripScreen() {
                   onChangeText={setCustomCountry}
                 />
                 <Text className="mt-1 text-[10.5px] text-gray-400">
-                  Deux lettres : FR, BE, IT, ES, GB, US, CA…
+                  {t('Deux lettres : FR, BE, IT, ES, GB, US, CA…', 'Two letters: FR, BE, IT, ES, GB, US, CA…')}
                 </Text>
               </View>
             </View>
           ) : null}
 
-          <SectionTitle>Dates</SectionTitle>
+          <SectionTitle>{t('Dates', 'Dates')}</SectionTitle>
           <View className="gap-4">
             <Input
-              label="Départ (AAAA-MM-JJ)"
+              label={t('Départ (AAAA-MM-JJ)', 'Departure (YYYY-MM-DD)')}
               placeholder="2026-10-15"
               keyboardType="numbers-and-punctuation"
               value={departureDate}
               onChangeText={setDepartureDate}
             />
             <Input
-              label="Arrivée (facultatif)"
+              label={t('Arrivée (facultatif)', 'Arrival (optional)')}
               placeholder="2026-10-16"
               keyboardType="numbers-and-punctuation"
               value={arrivalDate}
@@ -316,11 +318,11 @@ export default function NewTripScreen() {
             />
           </View>
 
-          <SectionTitle>Capacité et tarif</SectionTitle>
+          <SectionTitle>{t('Capacité et tarif', 'Capacity and rate')}</SectionTitle>
           <View className="gap-4">
             <View>
               <Input
-                label="Kilos disponibles"
+                label={t('Kilos disponibles', 'Available kilograms')}
                 placeholder="5"
                 keyboardType="decimal-pad"
                 value={maxWeight}
@@ -328,21 +330,23 @@ export default function NewTripScreen() {
               />
               {ceiling !== null ? (
                 <Text className="mt-1 text-[10.5px] text-gray-400">
-                  Votre palier actuel : {ceiling} kg par voyage. Il augmente
-                  après 5 voyages validés.
+                  {t(
+                    `Votre palier actuel : ${ceiling} kg par voyage. Il augmente après 5 voyages validés.`,
+                    `Your current limit: ${ceiling} kg per trip. It increases after 5 completed trips.`,
+                  )}
                 </Text>
               ) : null}
             </View>
             <View>
               <Input
-                label="Prix au kilo (€)"
+                label={t('Prix au kilo (€)', 'Price per kilogram (€)')}
                 placeholder="8"
                 keyboardType="decimal-pad"
                 value={pricePerKg}
                 onChangeText={setPricePerKg}
               />
               <Text className="mt-1 text-[10.5px] text-gray-400">
-                C'est ce que paiera l'acheteur, en plus du prix du produit.
+                {t("C'est ce que paiera l'acheteur, en plus du prix du produit.", 'This is what the buyer pays in addition to the product price.')}
               </Text>
             </View>
           </View>
@@ -352,7 +356,7 @@ export default function NewTripScreen() {
           {estimate !== null ? (
             <View className="mt-4 rounded-xl bg-emerald-50 p-3">
               <Text className="text-[12.5px] text-primary">
-                Valise pleine, ce trajet vous rapporterait environ{' '}
+                {t('Valise pleine, ce trajet vous rapporterait environ', 'With a full suitcase, this trip would earn you about')}{' '}
                 <Text className="font-bold">{estimate.toFixed(2)} €</Text>.
               </Text>
             </View>
@@ -366,7 +370,7 @@ export default function NewTripScreen() {
 
           <View className="mt-6">
             <Button onPress={handleSubmit} loading={create.isPending} fullWidth>
-              Publier le trajet
+              {t('Publier le trajet', 'Publish trip')}
             </Button>
           </View>
         </ScrollView>

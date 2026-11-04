@@ -3,7 +3,7 @@
     "name": "Luuma",
     "slug": "luuma",
     "version": "1.0.0",
-    "orientation": "portrait",
+    "orientation": "default",
     "icon": "./assets/Icon.png",
     "userInterfaceStyle": "light",
     "splash": {
@@ -49,7 +49,13 @@
       "expo-notifications",
       "expo-image-picker",
       "expo-asset",
-      "expo-video"
+      "expo-video",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Luuma utilise Face ID pour déverrouiller votre session."
+        }
+      ]
     ]
   }
 }

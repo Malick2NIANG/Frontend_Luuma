@@ -9,11 +9,14 @@ import {
   View,
 } from 'react-native';
 import { BrandLogo } from '@/components/BrandLogo';
+import { AuthBackgroundCarousel } from '@/components/auth/AuthBackgroundCarousel';
+import { AuthFooter } from '@/components/auth/AuthFooter';
+import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton';
+import { LanguageToggle } from '@/components/auth/LanguageToggle';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { PhoneInput } from '@/components/ui/PhoneInput';
 import { Screen } from '@/components/ui/Screen';
-import { colors } from '@/constants/colors';
 import { DEFAULT_COUNTRY_ISO, findCountry } from '@/constants/countries';
 import { useRegister } from '@/hooks/useAuth';
 import { useGoBack } from '@/hooks/useGoBack';
@@ -23,6 +26,7 @@ import {
   PASSWORD_MIN_LENGTH,
   toE164,
 } from '@/lib/validators';
+import { useAppLanguage } from '@/lib/appLanguage';
 import { useAuthStore } from '@/store/auth.store';
 
 interface FormErrors {
@@ -37,6 +41,7 @@ interface FormErrors {
 export default function RegisterScreen() {
   const { returnTo } = useLocalSearchParams<{ returnTo?: string }>();
   const router = useRouter();
+  const { t } = useAppLanguage();
   const register = useRegister();
   // Jamais `router.back()` en direct : arrivé par lien, par notification ou
   // après un rechargement de page, l'historique est vide et l'action échoue
@@ -56,30 +61,39 @@ export default function RegisterScreen() {
     const nextErrors: FormErrors = {};
 
     if (!firstName.trim()) {
-      nextErrors.firstName = 'Le prénom est requis.';
+      nextErrors.firstName = t('Le prénom est requis.', 'First name is required.');
     }
     if (!lastName.trim()) {
-      nextErrors.lastName = 'Le nom est requis.';
+      nextErrors.lastName = t('Le nom est requis.', 'Last name is required.');
     }
     if (!email.trim()) {
-      nextErrors.email = "L'email est requis.";
+      nextErrors.email = t("L'email est requis.", 'Email is required.');
     } else if (!isValidEmail(email)) {
-      nextErrors.email = 'Adresse email invalide.';
+      nextErrors.email = t('Adresse email invalide.', 'Invalid email address.');
     }
     if (!phone.trim()) {
-      nextErrors.phone = 'Le téléphone est requis.';
+      nextErrors.phone = t('Le téléphone est requis.', 'Phone number is required.');
     } else if (!isValidPhone(toE164(findCountry(countryIso).dial, phone))) {
       // Le message ne parle plus de format international : l'indicatif est
       // choisi à part, la personne n'a qu'un numéro local à taper.
-      nextErrors.phone = 'Numéro invalide. Vérifiez les chiffres saisis.';
+      nextErrors.phone = t(
+        'Numéro invalide. Vérifiez les chiffres saisis.',
+        'Invalid number. Check the digits you entered.',
+      );
     }
     if (!password) {
-      nextErrors.password = 'Le mot de passe est requis.';
+      nextErrors.password = t('Le mot de passe est requis.', 'Password is required.');
     } else if (password.length < PASSWORD_MIN_LENGTH) {
-      nextErrors.password = `Minimum ${PASSWORD_MIN_LENGTH} caractères.`;
+      nextErrors.password = t(
+        `Minimum ${PASSWORD_MIN_LENGTH} caractères.`,
+        `At least ${PASSWORD_MIN_LENGTH} characters.`,
+      );
     }
     if (confirmPassword !== password) {
-      nextErrors.confirmPassword = 'Les mots de passe ne correspondent pas.';
+      nextErrors.confirmPassword = t(
+        'Les mots de passe ne correspondent pas.',
+        'Passwords do not match.',
+      );
     }
 
     setErrors(nextErrors);
@@ -110,30 +124,31 @@ export default function RegisterScreen() {
       style={{ flex: 1 }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <Screen scroll>
+      <AuthBackgroundCarousel />
+      <Screen scroll contentMaxWidth={520} transparent style={{ zIndex: 1 }}>
         {/* Flèche de retour explicite : l'écran est atteint depuis la
             connexion, et le geste de retour n'existe pas sur le web. */}
         <Pressable
           onPress={goBack}
           hitSlop={10}
           accessibilityRole="button"
-          accessibilityLabel="Retour"
+          accessibilityLabel={t('Retour', 'Back')}
           className="self-start py-1"
         >
-          <Ionicons name="arrow-back" size={22} color={colors.text} />
+          <Ionicons name="arrow-back" size={22} color="#FFFFFF" />
         </Pressable>
 
         <View className="flex-1 justify-center gap-5 pb-6">
           <View className="items-center gap-4">
             {/* Même logo que la connexion et l'écran d'accueil. L'icône carrée
                 à coins arrondis faisait « raccourci d'application ». */}
-            <BrandLogo width={80} height={56} />
+            <BrandLogo width={80} height={56} light />
             <View className="w-full gap-1">
-              <Text className="text-center text-2xl font-bold text-gray-900">
-                Créer un compte
+              <Text className="text-center text-2xl font-bold text-white">
+                {t('Créer un compte', 'Create an account')}
               </Text>
-              <Text className="text-center text-sm text-gray-500">
-                Rejoignez la communauté Luuma
+              <Text className="text-center text-sm text-white">
+                {t('Rejoignez la communauté Luuma', 'Join the Luuma community')}
               </Text>
             </View>
           </View>
@@ -146,7 +161,8 @@ export default function RegisterScreen() {
             <View className="flex-row gap-3">
               <View className="flex-1">
                 <Input
-                  label="Prénom"
+                  label={t('Prénom', 'First name')}
+                  appearance="light"
                   placeholder="Awa"
                   autoCapitalize="words"
                   autoComplete="given-name"
@@ -157,7 +173,8 @@ export default function RegisterScreen() {
               </View>
               <View className="flex-1">
                 <Input
-                  label="Nom"
+                  label={t('Nom', 'Last name')}
+                  appearance="light"
                   placeholder="Diop"
                   autoCapitalize="words"
                   autoComplete="family-name"
@@ -169,7 +186,8 @@ export default function RegisterScreen() {
             </View>
             <Input
               label="Email"
-              placeholder="vous@exemple.com"
+              appearance="light"
+              placeholder={t('vous@exemple.com', 'you@example.com')}
               autoCapitalize="none"
               autoComplete="email"
               keyboardType="email-address"
@@ -179,13 +197,15 @@ export default function RegisterScreen() {
             />
             <PhoneInput
               countryIso={countryIso}
+              appearance="light"
               onCountryChange={setCountryIso}
               value={phone}
               onChangeText={setPhone}
               error={errors.phone}
             />
             <Input
-              label="Mot de passe"
+              label={t('Mot de passe', 'Password')}
+              appearance="light"
               placeholder="••••••••"
               secureTextEntry
               autoCapitalize="none"
@@ -195,7 +215,8 @@ export default function RegisterScreen() {
               error={errors.password}
             />
             <Input
-              label="Confirmer le mot de passe"
+              label={t('Confirmer le mot de passe', 'Confirm password')}
+              appearance="light"
               placeholder="••••••••"
               secureTextEntry
               autoCapitalize="none"
@@ -210,20 +231,31 @@ export default function RegisterScreen() {
                 cochée à côté d'un lien qu'on n'ouvre jamais ne vaut pas un
                 consentement éclairé. Mais l'information doit être donnée AU
                 MOMENT DE LA COLLECTE, d'où cette mention et ces liens. */}
-            <Text className="text-center text-[11.5px] leading-[17px] text-gray-400">
-              En créant un compte, vous acceptez nos{' '}
-              <Link href="/legal/terms" className="font-semibold text-gray-600">
-                conditions générales
+            <Text className="text-center text-[11.5px] leading-[17px] text-white">
+              {t(
+                'En créant un compte, vous acceptez nos',
+                'By creating an account, you agree to our',
+              )}{' '}
+              <Link href="/legal/terms" className="font-semibold text-white underline">
+                {t('conditions générales', 'terms of service')}
               </Link>{' '}
-              et notre{' '}
-              <Link href="/legal/privacy" className="font-semibold text-gray-600">
-                politique de confidentialité
+              {t('et notre', 'and our')}{' '}
+              <Link
+                href="/legal/privacy"
+                className="font-semibold text-white underline"
+              >
+                {t('politique de confidentialité', 'privacy policy')}
               </Link>
-              , que nous vous ferons lire à la première ouverture.
+              {t(
+                ', que nous vous ferons lire à la première ouverture.',
+                ', which we will ask you to read the first time you open the app.',
+              )}
             </Text>
 
             {register.errorMessage ? (
-              <Text className="text-center text-sm text-red-500">{register.errorMessage}</Text>
+              <Text className="text-center text-sm text-white">
+                {register.errorMessage}
+              </Text>
             ) : null}
 
             <Button
@@ -231,43 +263,49 @@ export default function RegisterScreen() {
               loading={register.isPending}
               fullWidth
             >
-              Créer mon compte
+              {t('Créer mon compte', 'Create my account')}
             </Button>
           </View>
 
+          <GoogleSignInButton light />
+
           <View className="flex-row items-center justify-center gap-1">
-            <Text className="text-sm text-gray-500">Déjà un compte ?</Text>
+            <Text className="text-sm text-white">
+              {t('Déjà un compte ?', 'Already have an account?')}
+            </Text>
             <Link
-              href={{ pathname: '/login', params: returnTo ? { returnTo } : {} }}
-              className="text-sm font-semibold text-primary"
+              href={{
+                pathname: '/login',
+                params: returnTo ? { returnTo } : {},
+              }}
+              className="text-sm font-semibold text-white underline"
             >
-              Se connecter
+              {t('Se connecter', 'Sign in')}
             </Link>
           </View>
 
-          {/* Même porte de sortie que sur la connexion : quelqu'un qui recule
-              devant un formulaire de cinq champs doit pouvoir regarder avant
-              de décider, plutôt que de fermer l'application. */}
-          <View className="w-full items-center gap-1.5">
+          <View className="items-center">
             <Pressable
               onPress={() => {
                 continueAsGuest();
                 router.replace('/(app)/(tabs)');
               }}
               accessibilityRole="button"
-              accessibilityLabel="Découvrir Luuma sans créer de compte"
-              className="w-full flex-row items-center justify-center gap-1.5 rounded-xl border border-gray-200 py-3"
+              accessibilityLabel={t(
+                'Découvrir Luuma sans créer de compte',
+                'Explore Luuma without creating an account',
+              )}
+              className="flex-row items-center gap-1 py-1"
             >
-              <Text className="text-sm font-semibold text-gray-700">
-                Découvrir sans compte
+              <Text className="text-xs font-medium text-white">
+                {t('Découvrir sans compte', 'Explore without an account')}
               </Text>
-              <Ionicons name="arrow-forward" size={15} color="#374151" />
+              <Ionicons name="arrow-forward" size={13} color="#FFFFFF" />
             </Pressable>
-            <Text className="text-center text-[11px] text-gray-400">
-              Un compte sera demandé au moment de commander.
-            </Text>
           </View>
+          <LanguageToggle light />
         </View>
+        <AuthFooter light />
       </Screen>
     </KeyboardAvoidingView>
   );

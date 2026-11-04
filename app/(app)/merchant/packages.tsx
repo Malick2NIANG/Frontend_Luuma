@@ -25,6 +25,7 @@ import { useRequireAuth } from '@/hooks/useRequireAuth';
 import { useUpload } from '@/hooks/useUpload';
 import { firstImage } from '@/lib/media';
 import type { PackageStatus } from '@/types/api.types';
+import { useAppLanguage } from '@/lib/appLanguage';
 
 /** Couleur du bandeau d'état — le rouge est réservé à ce qui a mal tourné. */
 const STATUS_TONE: Record<PackageStatus, string> = {
@@ -36,9 +37,18 @@ const STATUS_TONE: Record<PackageStatus, string> = {
   REFUSED: 'bg-red-50 text-red-900',
   CANCELLED: 'bg-gray-100 text-gray-500',
 };
+const PACKAGE_STATUS_LABELS_EN: Record<PackageStatus, string> = {
+  AWAITING_DROPOFF: 'Awaiting drop-off',
+  DROPPED_OFF: 'Dropped off',
+  RECEIVED_BY_GP: 'Received by personal shopper',
+  IN_TRANSIT: 'In transit',
+  DELIVERED: 'Delivered',
+  REFUSED: 'Refused',
+  CANCELLED: 'Cancelled',
+};
 
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('fr-FR', {
+function formatDate(iso: string, locale: string): string {
+  return new Date(iso).toLocaleDateString(locale, {
     day: 'numeric',
     month: 'long',
   });
@@ -51,6 +61,7 @@ function PackageCard({
   pkg: MerchantPackage;
   onDropOff: () => void;
 }) {
+  const { t } = useAppLanguage();
   const tone = STATUS_TONE[pkg.status];
   const totalItems = pkg.items.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -65,7 +76,7 @@ function PackageCard({
     <View className="mx-3.5 mb-3 overflow-hidden rounded-xl border border-gray-200">
       <View className={['flex-row items-center justify-between px-3 py-2', tone.split(' ')[0]].join(' ')}>
         <Text className={['text-[11.5px] font-bold', tone.split(' ')[1]].join(' ')}>
-          {PACKAGE_STATUS_LABELS[pkg.status]}
+          {t(PACKAGE_STATUS_LABELS[pkg.status], PACKAGE_STATUS_LABELS_EN[pkg.status])}
         </Text>
         <Text className={['text-[11px]', tone.split(' ')[1]].join(' ')}>
           {pkg.weight.toFixed(2)} kg
@@ -85,11 +96,14 @@ function PackageCard({
             isUrgent ? 'font-semibold text-red-600' : 'text-gray-500',
           ].join(' ')}
         >
-          Départ le {formatDate(pkg.trip.departureDate)}
+          {t('Départ le', 'Departs on')} {formatDate(pkg.trip.departureDate, t('fr-FR', 'en-US'))}
           {pkg.status === 'AWAITING_DROPOFF'
             ? daysLeft > 0
-              ? ` · ${daysLeft} jour${daysLeft > 1 ? 's' : ''} pour remettre le colis`
-              : ' · le GP part aujourd’hui'
+              ? t(
+                  ` · ${daysLeft} jour${daysLeft > 1 ? 's' : ''} pour remettre le colis`,
+                  ` · ${daysLeft} day${daysLeft === 1 ? '' : 's'} to hand over the package`,
+                )
+              : t(' · le GP part aujourd’hui', ' · the personal shopper leaves today')
             : ''}
         </Text>
 
@@ -126,8 +140,10 @@ function PackageCard({
         </View>
 
         <Text className="mt-2.5 text-[10.5px] text-gray-400">
-          {pkg.items.length} référence{pkg.items.length > 1 ? 's' : ''} ·{' '}
-          {totalItems} article{totalItems > 1 ? 's' : ''}
+          {t(
+            `${pkg.items.length} référence${pkg.items.length > 1 ? 's' : ''} · ${totalItems} article${totalItems > 1 ? 's' : ''}`,
+            `${pkg.items.length} SKU${pkg.items.length === 1 ? '' : 's'} · ${totalItems} item${totalItems === 1 ? '' : 's'}`,
+          )}
         </Text>
 
         {pkg.status === 'AWAITING_DROPOFF' ? (
@@ -137,7 +153,7 @@ function PackageCard({
           >
             <Ionicons name="camera-outline" size={16} color={colors.white} />
             <Text className="text-[12.5px] font-semibold text-white">
-              J'ai remis le colis
+              {t("J'ai remis le colis", 'I handed over the package')}
             </Text>
           </Pressable>
         ) : null}
@@ -154,6 +170,7 @@ function PackageCard({
  * dix colis déjà livrés.
  */
 export default function MerchantPackagesScreen() {
+  const { t } = useAppLanguage();
   const goBack = useGoBack('/(app)/(tabs)/shop');
   const { isReady } = useRequireAuth('/(app)/merchant/packages');
   const { data, isLoading, isError, refetch } = useMerchantPackages();
@@ -175,7 +192,7 @@ export default function MerchantPackagesScreen() {
   const takePhoto = async () => {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
     if (!permission.granted) {
-      setSheetError("L'accès à l'appareil photo est nécessaire.");
+      setSheetError(t("L'accès à l'appareil photo est nécessaire.", 'Camera access is required.'));
       return;
     }
 
@@ -197,7 +214,7 @@ export default function MerchantPackagesScreen() {
     });
 
     if (!uploaded?.fileUrl) {
-      setSheetError("L'envoi de la photo a échoué. Réessayez.");
+      setSheetError(t("L'envoi de la photo a échoué. Réessayez.", 'Photo upload failed. Please try again.'));
       return;
     }
 
@@ -217,11 +234,11 @@ export default function MerchantPackagesScreen() {
           onPress={goBack}
           hitSlop={10}
           accessibilityRole="button"
-          accessibilityLabel="Retour"
+          accessibilityLabel={t('Retour', 'Back')}
         >
           <Ionicons name="arrow-back" size={22} color={colors.text} />
         </Pressable>
-        <Text className="flex-1 text-lg font-bold text-gray-900">Mes colis</Text>
+        <Text className="flex-1 text-lg font-bold text-gray-900">{t('Mes colis', 'My packages')}</Text>
       </View>
 
       {isLoading ? (
@@ -231,23 +248,26 @@ export default function MerchantPackagesScreen() {
       ) : isError ? (
         <EmptyState
           icon="cloud-offline-outline"
-          title="Chargement impossible"
-          description="Vérifiez votre connexion puis réessayez."
-          actionLabel="Réessayer"
+          title={t('Chargement impossible', 'Unable to load')}
+          description={t('Vérifiez votre connexion puis réessayez.', 'Check your connection and try again.')}
+          actionLabel={t('Réessayer', 'Try again')}
           onAction={() => void refetch()}
         />
       ) : !data || data.length === 0 ? (
         <EmptyState
           icon="cube-outline"
-          title="Aucun colis"
-          description="Dès qu'une commande sera payée, le colis à préparer apparaîtra ici avec la date de départ du GP."
+          title={t('Aucun colis', 'No packages yet')}
+          description={t(
+            "Dès qu'une commande sera payée, le colis à préparer apparaîtra ici avec la date de départ du GP.",
+            'Once an order is paid, the package to prepare and the personal shopper’s departure date will appear here.',
+          )}
         />
       ) : (
         <ScrollView contentContainerClassName="py-3">
           {awaiting.length > 0 ? (
             <>
               <Text className="mb-2 px-3.5 text-[11px] font-bold uppercase tracking-wide text-gray-400">
-                À remettre ({awaiting.length})
+                {t(`À remettre (${awaiting.length})`, `To hand over (${awaiting.length})`)}
               </Text>
               {awaiting.map((pkg) => (
                 <PackageCard key={pkg.id} pkg={pkg} onDropOff={() => setTarget(pkg)} />
@@ -258,7 +278,7 @@ export default function MerchantPackagesScreen() {
           {others.length > 0 ? (
             <>
               <Text className="mb-2 mt-3 px-3.5 text-[11px] font-bold uppercase tracking-wide text-gray-400">
-                Historique
+                {t('Historique', 'History')}
               </Text>
               {others.map((pkg) => (
                 <PackageCard key={pkg.id} pkg={pkg} onDropOff={() => undefined} />
@@ -277,11 +297,13 @@ export default function MerchantPackagesScreen() {
         <View className="flex-1 justify-end bg-black/40">
           <View className="rounded-t-2xl bg-white p-5 pb-8">
             <Text className="text-[16px] font-bold text-gray-900">
-              Photo du colis préparé
+              {t('Photo du colis préparé', 'Photo of the prepared package')}
             </Text>
             <Text className="mt-1.5 text-[12.5px] leading-[18px] text-gray-600">
-              Cette photo fait foi si le GP conteste l'état ou le contenu à la
-              réception. Sans elle, votre parole vaut la sienne en cas de litige.
+              {t(
+                "Cette photo fait foi si le GP conteste l'état ou le contenu à la réception. Sans elle, votre parole vaut la sienne en cas de litige.",
+                'This photo serves as evidence if the personal shopper disputes the package condition or contents upon receipt. Without it, your word carries no more weight than theirs in a dispute.',
+              )}
             </Text>
 
             <Pressable
@@ -298,7 +320,7 @@ export default function MerchantPackagesScreen() {
                 <>
                   <Ionicons name="camera-outline" size={26} color="#9CA3AF" />
                   <Text className="mt-1.5 text-[12px] text-gray-500">
-                    Prendre la photo
+                    {t('Prendre la photo', 'Take photo')}
                   </Text>
                 </>
               )}
@@ -317,10 +339,10 @@ export default function MerchantPackagesScreen() {
                 loading={isUploading || dropOff.isPending}
                 fullWidth
               >
-                Confirmer la remise
+                {t('Confirmer la remise', 'Confirm handover')}
               </Button>
               <Button variant="secondary" onPress={closeSheet} fullWidth>
-                Annuler
+                {t('Annuler', 'Cancel')}
               </Button>
             </View>
           </View>

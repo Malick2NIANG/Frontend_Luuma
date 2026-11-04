@@ -5,6 +5,7 @@ import { colors } from '@/constants/colors';
 import { useAuth } from '@/hooks/useAuth';
 import { useConversations } from '@/hooks/useDirectChat';
 import { useMe } from '@/hooks/useMe';
+import { useAppLanguage } from '@/lib/appLanguage';
 
 /**
  * Quatre onglets pour tout le monde — Accueil, Recherche, Messages, Profil —
@@ -25,6 +26,7 @@ import { useMe } from '@/hooks/useMe';
  * chercher son propre historique — la place que lui donne aussi Amazon.
  */
 export default function TabsLayout() {
+  const { t } = useAppLanguage();
   const { user } = useAuth();
 
   const { data: conversations } = useConversations();
@@ -72,7 +74,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Accueil',
+          title: t('Accueil', 'Home'),
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons
               name={focused ? 'home' : 'home-outline'}
@@ -85,7 +87,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="search"
         options={{
-          title: 'Recherche',
+          title: t('Recherche', 'Search'),
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons
               name={focused ? 'search' : 'search-outline'}
@@ -98,7 +100,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="shop"
         options={{
-          title: 'Boutique',
+          title: t('Boutique', 'Shop'),
           href: hasShop ? '/(app)/(tabs)/shop' : null,
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons
@@ -112,7 +114,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="gp"
         options={{
-          title: 'Voyages',
+          title: t('Voyages', 'Trips'),
           href: hasGp ? '/(app)/(tabs)/gp' : null,
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons
@@ -148,7 +150,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="profile"
         options={{
-          title: 'Profil',
+          title: t('Profil', 'Profile'),
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons
               name={focused ? 'person' : 'person-outline'}

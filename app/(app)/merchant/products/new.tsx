@@ -22,6 +22,7 @@ import { useUpload } from '@/hooks/useUpload';
 import { api } from '@/lib/api';
 import { isVideo } from '@/lib/media';
 import { parseDecimal } from '@/lib/numbers';
+import { useAppLanguage } from '@/lib/appLanguage';
 import {
   PRODUCT_CATEGORIES,
   PRODUCT_CATEGORY_LABELS,
@@ -43,48 +44,70 @@ const MAX_MEDIA = 10;
 const KINDS: {
   key: ProductKind;
   label: string;
+  labelEn: string;
   hint: string;
+  hintEn: string;
   icon: React.ComponentProps<typeof Ionicons>['name'];
 }[] = [
   {
     key: 'SIMPLE',
     label: 'Article simple',
+    labelEn: 'Single item',
     hint: 'Un prix, un poids. Bijoux, épices, cosmétiques.',
+    hintEn: 'One price, one weight. Jewelry, spices, cosmetics.',
     icon: 'cube-outline',
   },
   {
     key: 'VARIANT',
     label: 'Plusieurs tailles ou couleurs',
+    labelEn: 'Multiple sizes or colors',
     hint: "L'acheteur choisit avant d'ajouter au panier.",
+    hintEn: 'The buyer chooses before adding the item to their cart.',
     icon: 'shirt-outline',
   },
   {
     key: 'MADE_TO_ORDER',
     label: 'Sur-mesure',
+    labelEn: 'Made to order',
     hint: "L'acheteur saisit ses mesures, vous confectionnez.",
+    hintEn: 'The buyer enters their measurements and you make the item.',
     icon: 'cut-outline',
   },
   {
     key: 'BY_LENGTH',
     label: 'Vendu au mètre',
+    labelEn: 'Sold by length',
     hint: 'Tissu, ruban, galon. Prix et poids par unité.',
+    hintEn: 'Fabric, ribbon, trim. Price and weight per unit.',
     icon: 'resize-outline',
   },
 ];
 
 /** Mesures courantes de la couture sénégalaise, en clés stables. */
-const MEASUREMENTS: { key: string; label: string }[] = [
-  { key: 'tour_poitrine', label: 'Tour de poitrine' },
-  { key: 'tour_taille', label: 'Tour de taille' },
-  { key: 'tour_hanches', label: 'Tour de hanches' },
-  { key: 'longueur_dos', label: 'Longueur dos' },
-  { key: 'longueur_manche', label: 'Longueur manche' },
-  { key: 'tour_bras', label: 'Tour de bras' },
-  { key: 'tour_cou', label: 'Tour de cou' },
-  { key: 'carrure', label: 'Carrure' },
-  { key: 'longueur_jupe', label: 'Longueur jupe' },
-  { key: 'longueur_pantalon', label: 'Longueur pantalon' },
+const MEASUREMENTS: { key: string; label: string; english: string }[] = [
+  { key: 'tour_poitrine', label: 'Tour de poitrine', english: 'Chest' },
+  { key: 'tour_taille', label: 'Tour de taille', english: 'Waist' },
+  { key: 'tour_hanches', label: 'Tour de hanches', english: 'Hips' },
+  { key: 'longueur_dos', label: 'Longueur dos', english: 'Back length' },
+  { key: 'longueur_manche', label: 'Longueur manche', english: 'Sleeve length' },
+  { key: 'tour_bras', label: 'Tour de bras', english: 'Arm circumference' },
+  { key: 'tour_cou', label: 'Tour de cou', english: 'Neck circumference' },
+  { key: 'carrure', label: 'Carrure', english: 'Shoulder width' },
+  { key: 'longueur_jupe', label: 'Longueur jupe', english: 'Skirt length' },
+  { key: 'longueur_pantalon', label: 'Longueur pantalon', english: 'Trouser length' },
 ];
+const CATEGORY_LABELS_EN: Record<ProductCategory, string> = {
+  VETEMENTS: 'Clothing',
+  CHAUSSURES: 'Shoes',
+  BIJOUX_ACCESSOIRES: 'Jewelry & accessories',
+  ALIMENTAIRE: 'Food',
+  COSMETIQUES: 'Cosmetics & skincare',
+  ARTISANAT_DECO: 'Crafts & home decor',
+  ENFANT_BEBE: 'Kids & baby',
+  MAISON: 'Home',
+  LIVRES_CULTURE: 'Books & culture',
+  AUTRE: 'Other',
+};
 
 interface DraftVariant {
   /** Identifiant local uniquement : la déclinaison n'existe pas encore. */
@@ -143,6 +166,7 @@ function Chip({
 }
 
 export default function NewProductScreen() {
+  const { t } = useAppLanguage();
   const router = useRouter();
   const goBack = useGoBack('/(app)/(tabs)/shop');
   const queryClient = useQueryClient();
@@ -174,7 +198,7 @@ export default function NewProductScreen() {
       const uploadedUrls: string[] = [];
 
       for (const [index, item] of media.entries()) {
-        setUploadProgress(`Envoi du média ${index + 1} sur ${media.length}…`);
+        setUploadProgress(t(`Envoi du média ${index + 1} sur ${media.length}…`, `Uploading media ${index + 1} of ${media.length}…`));
         const result = await upload({
           uri: item.uri,
           category: 'product',
@@ -182,12 +206,12 @@ export default function NewProductScreen() {
         });
 
         if (!result?.fileUrl) {
-          throw new Error("L'envoi d'un média a échoué. Réessayez.");
+          throw new Error(t("L'envoi d'un média a échoué. Réessayez.", 'Media upload failed. Please try again.'));
         }
         uploadedUrls.push(result.fileUrl);
       }
 
-      setUploadProgress('Création du produit…');
+      setUploadProgress(t('Création du produit…', 'Creating product…'));
 
       const payload: Record<string, unknown> = {
         name: name.trim(),
@@ -236,7 +260,7 @@ export default function NewProductScreen() {
       setError(
         caught instanceof Error
           ? caught.message
-          : 'La création a échoué. Réessayez.',
+          : t('La création a échoué. Réessayez.', 'Product creation failed. Please try again.'),
       );
     },
   });
@@ -246,7 +270,7 @@ export default function NewProductScreen() {
   const pickMedia = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      setError("L'accès à vos photos est nécessaire pour illustrer le produit.");
+      setError(t("L'accès à vos photos est nécessaire pour illustrer le produit.", 'Photo library access is required to add product images.'));
       return;
     }
 
@@ -272,32 +296,32 @@ export default function NewProductScreen() {
   };
 
   const validate = (): string | null => {
-    if (!name.trim()) return 'Le nom du produit est obligatoire.';
+    if (!name.trim()) return t('Le nom du produit est obligatoire.', 'Product name is required.');
 
     const parsedPrice = parseDecimal(price);
     if (parsedPrice === null || parsedPrice <= 0) {
-      return 'Indiquez un prix en FCFA supérieur à 0.';
+      return t('Indiquez un prix en FCFA supérieur à 0.', 'Enter a price in XOF greater than 0.');
     }
 
     const parsedWeight = parseDecimal(weight);
     if (parsedWeight === null || parsedWeight <= 0) {
-      return 'Indiquez un poids en kilos supérieur à 0.';
+      return t('Indiquez un poids en kilos supérieur à 0.', 'Enter a weight in kilograms greater than 0.');
     }
 
     if (kind === 'MADE_TO_ORDER') {
       const days = parseDecimal(productionDays);
       if (days === null || days < 1) {
-        return 'Indiquez le délai de confection, en jours.';
+        return t('Indiquez le délai de confection, en jours.', 'Enter the production time in days.');
       }
       if (measurements.length === 0) {
-        return 'Choisissez au moins une mesure à demander à l’acheteur.';
+        return t('Choisissez au moins une mesure à demander à l’acheteur.', 'Choose at least one measurement to request from the buyer.');
       }
     }
 
     if (kind === 'BY_LENGTH') {
       const minimum = parseDecimal(minQuantity);
       if (minimum === null || minimum <= 0) {
-        return 'Indiquez la quantité minimale commandable.';
+        return t('Indiquez la quantité minimale commandable.', 'Enter the minimum order quantity.');
       }
     }
 
@@ -308,10 +332,10 @@ export default function NewProductScreen() {
           // Le poids par déclinaison est tout l'intérêt du modèle : c'est lui
           // qui est réservé sur la capacité du GP. Un XXL facturé au poids du
           // XS fait perdre de l'argent au GP à chaque envoi.
-          return 'Chaque déclinaison doit avoir un poids en kilos.';
+          return t('Chaque déclinaison doit avoir un poids en kilos.', 'Each variant must have a weight in kilograms.');
         }
         if (!variant.size && !variant.colorName.trim()) {
-          return 'Chaque déclinaison doit avoir au moins une taille ou une couleur.';
+          return t('Chaque déclinaison doit avoir au moins une taille ou une couleur.', 'Each variant must have at least a size or a color.');
         }
       }
     }
@@ -331,12 +355,18 @@ export default function NewProductScreen() {
 
   const priceHint =
     kind === 'BY_LENGTH'
-      ? `Prix par ${unitLabel.trim() || 'unité'}`
-      : 'Prix en FCFA';
+      ? t(
+          `Prix par ${unitLabel.trim() || 'unité'}`,
+          `Price per ${unitLabel.trim() || 'unit'}`,
+        )
+      : t('Prix en FCFA', 'Price in XOF');
   const weightHint =
     kind === 'BY_LENGTH'
-      ? `Poids par ${unitLabel.trim() || 'unité'}, en kg`
-      : 'Poids en kg, emballage compris';
+      ? t(
+          `Poids par ${unitLabel.trim() || 'unité'}, en kg`,
+          `Weight per ${unitLabel.trim() || 'unit'}, in kg`,
+        )
+      : t('Poids en kg, emballage compris', 'Weight in kg, including packaging');
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
@@ -345,12 +375,12 @@ export default function NewProductScreen() {
           onPress={goBack}
           hitSlop={10}
           accessibilityRole="button"
-          accessibilityLabel="Retour"
+          accessibilityLabel={t('Retour', 'Back')}
         >
           <Ionicons name="close" size={24} color={colors.text} />
         </Pressable>
         <Text className="flex-1 text-lg font-bold text-gray-900">
-          Nouveau produit
+          {t('Nouveau produit', 'New product')}
         </Text>
       </View>
 
@@ -359,7 +389,7 @@ export default function NewProductScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView contentContainerClassName="px-3.5 pb-10" keyboardShouldPersistTaps="handled">
-          <SectionTitle>Photos et vidéos</SectionTitle>
+          <SectionTitle>{t('Photos et vidéos', 'Photos and videos')}</SectionTitle>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             <View className="flex-row gap-2">
               {media.map((item, index) => (
@@ -383,7 +413,7 @@ export default function NewProductScreen() {
                     }
                     hitSlop={8}
                     accessibilityRole="button"
-                    accessibilityLabel="Retirer ce média"
+                    accessibilityLabel={t('Retirer ce média', 'Remove this media')}
                     className="absolute -right-1.5 -top-1.5 h-5 w-5 items-center justify-center rounded-full bg-gray-900"
                   >
                     <Ionicons name="close" size={12} color="#FFFFFF" />
@@ -402,20 +432,20 @@ export default function NewProductScreen() {
             </View>
           </ScrollView>
           <Text className="mt-1.5 text-[10.5px] text-gray-400">
-            {media.length}/{MAX_MEDIA} · la première image sert de vignette.
+            {t(`${media.length}/${MAX_MEDIA} · la première image sert de vignette.`, `${media.length}/${MAX_MEDIA} · the first image is used as the thumbnail.`)}
           </Text>
 
-          <SectionTitle>Le produit</SectionTitle>
+          <SectionTitle>{t('Le produit', 'Product details')}</SectionTitle>
           <View className="gap-4">
             <Input
-              label="Nom"
-              placeholder="Boubou bazin riche brodé"
+              label={t('Nom', 'Name')}
+              placeholder={t('Boubou bazin riche brodé', 'Rich embroidered bazin boubou')}
               value={name}
               onChangeText={setName}
             />
             <Input
-              label="Description"
-              placeholder="Matière, finitions, entretien…"
+              label={t('Description', 'Description')}
+              placeholder={t('Matière, finitions, entretien…', 'Fabric, finish, care…')}
               value={description}
               onChangeText={setDescription}
               multiline
@@ -424,12 +454,12 @@ export default function NewProductScreen() {
             />
           </View>
 
-          <SectionTitle>Catégorie</SectionTitle>
+          <SectionTitle>{t('Catégorie', 'Category')}</SectionTitle>
           <View className="flex-row flex-wrap gap-2">
             {PRODUCT_CATEGORIES.map((value) => (
               <Chip
                 key={value}
-                label={PRODUCT_CATEGORY_LABELS[value]}
+                label={t(PRODUCT_CATEGORY_LABELS[value], CATEGORY_LABELS_EN[value])}
                 active={category === value}
                 onPress={() => setCategory(value)}
               />
@@ -437,17 +467,17 @@ export default function NewProductScreen() {
           </View>
           <View className="mt-4">
             <Input
-              label="Précision (facultatif)"
-              placeholder="bazin homme, taille-basse…"
+              label={t('Précision (facultatif)', 'Details (optional)')}
+              placeholder={t('bazin homme, taille-basse…', 'men’s bazin, low-rise…')}
               value={subCategory}
               onChangeText={setSubCategory}
             />
             <Text className="mt-1 text-[10.5px] text-gray-400">
-              Aide la recherche à trouver votre produit.
+              {t('Aide la recherche à trouver votre produit.', 'Helps shoppers find your product.')}
             </Text>
           </View>
 
-          <SectionTitle>Mode de vente</SectionTitle>
+          <SectionTitle>{t('Mode de vente', 'Selling method')}</SectionTitle>
           <View className="gap-2">
             {KINDS.map((item) => {
               const active = kind === item.key;
@@ -472,10 +502,10 @@ export default function NewProductScreen() {
                         active ? 'text-primary' : 'text-gray-900',
                       ].join(' ')}
                     >
-                      {item.label}
+                      {t(item.label, item.labelEn)}
                     </Text>
                     <Text className="mt-0.5 text-[11px] text-gray-500">
-                      {item.hint}
+                      {t(item.hint, item.hintEn)}
                     </Text>
                   </View>
                 </Pressable>
@@ -486,13 +516,13 @@ export default function NewProductScreen() {
           {kind === 'BY_LENGTH' ? (
             <View className="mt-4 gap-4">
               <Input
-                label="Unité de vente"
-                placeholder="mètre"
+                label={t('Unité de vente', 'Unit of sale')}
+                placeholder={t('mètre', 'meter')}
                 value={unitLabel}
                 onChangeText={setUnitLabel}
               />
               <Input
-                label="Quantité minimale"
+                label={t('Quantité minimale', 'Minimum quantity')}
                 placeholder="1"
                 keyboardType="decimal-pad"
                 value={minQuantity}
@@ -504,25 +534,27 @@ export default function NewProductScreen() {
           {kind === 'MADE_TO_ORDER' ? (
             <View className="mt-4">
               <Input
-                label="Délai de confection (jours)"
+                label={t('Délai de confection (jours)', 'Production time (days)')}
                 placeholder="14"
                 keyboardType="number-pad"
                 value={productionDays}
                 onChangeText={setProductionDays}
               />
               <Text className="mt-1 text-[10.5px] text-gray-400">
-                Luuma refusera automatiquement les GP qui partent avant la fin de
-                ce délai.
+                {t(
+                  'Luuma refusera automatiquement les GP qui partent avant la fin de ce délai.',
+                  'Luuma will automatically exclude personal shoppers whose trips depart before this time.',
+                )}
               </Text>
 
               <Text className="mb-2 mt-4 text-[12px] font-semibold text-gray-900">
-                Mesures à demander à l'acheteur
+                {t("Mesures à demander à l'acheteur", 'Measurements to request from the buyer')}
               </Text>
               <View className="flex-row flex-wrap gap-2">
                 {MEASUREMENTS.map((item) => (
                   <Chip
                     key={item.key}
-                    label={item.label}
+                    label={t(item.label, item.english)}
                     active={measurements.includes(item.key)}
                     onPress={() =>
                       setMeasurements((current) =>
@@ -548,7 +580,7 @@ export default function NewProductScreen() {
                 onChangeText={setPrice}
               />
               <Text className="mt-1 text-[10.5px] text-gray-400">
-                La conversion en euros est calculée automatiquement.
+                {t('La conversion en euros est calculée automatiquement.', 'The conversion to euros is calculated automatically.')}
               </Text>
             </View>
             <View>
@@ -560,19 +592,22 @@ export default function NewProductScreen() {
                 onChangeText={setWeight}
               />
               <Text className="mt-1 text-[10.5px] text-gray-400">
-                Le poids détermine ce que l'acheteur paiera au GP. Un poids
-                sous-estimé se retourne contre vous à la remise du colis.
+                {t(
+                  "Le poids détermine ce que l'acheteur paiera au GP. Un poids sous-estimé se retourne contre vous à la remise du colis.",
+                  'The weight determines what the buyer pays the personal shopper. Underestimating it can cost you when handing over the package.',
+                )}
               </Text>
             </View>
           </View>
 
           {kind === 'VARIANT' ? (
             <>
-              <SectionTitle>Déclinaisons</SectionTitle>
+              <SectionTitle>              {t('Déclinaisons', 'Variants')}</SectionTitle>
               <Text className="mb-3 text-[11px] leading-4 text-gray-500">
-                Chaque taille ou couleur a son propre poids : c'est lui qui est
-                réservé sur la valise du GP. Vous pourrez en ajouter d'autres
-                plus tard.
+                {t(
+                  "Chaque taille ou couleur a son propre poids : c'est lui qui est réservé sur la valise du GP. Vous pourrez en ajouter d'autres plus tard.",
+                  'Each size or color has its own weight, which is reserved in the personal shopper’s luggage. You can add more later.',
+                )}
               </Text>
 
               <View className="gap-3">
@@ -583,7 +618,7 @@ export default function NewProductScreen() {
                   >
                     <View className="mb-2 flex-row items-center justify-between">
                       <Text className="text-[12px] font-semibold text-gray-900">
-                        Déclinaison {index + 1}
+                        {t(`Déclinaison ${index + 1}`, `Variant ${index + 1}`)}
                       </Text>
                       <Pressable
                         onPress={() =>
@@ -593,7 +628,7 @@ export default function NewProductScreen() {
                         }
                         hitSlop={8}
                         accessibilityRole="button"
-                        accessibilityLabel="Supprimer cette déclinaison"
+                        accessibilityLabel={t('Supprimer cette déclinaison', 'Remove this variant')}
                       >
                         <Ionicons name="trash-outline" size={16} color="#DC2626" />
                       </Pressable>
@@ -603,7 +638,7 @@ export default function NewProductScreen() {
                       {PRODUCT_SIZES.map((size) => (
                         <Chip
                           key={size}
-                          label={size === 'ONE_SIZE' ? 'Unique' : size}
+                          label={size === 'ONE_SIZE' ? t('Unique', 'One size') : size}
                           active={variant.size === size}
                           onPress={() =>
                             setVariants((current) =>
@@ -620,8 +655,8 @@ export default function NewProductScreen() {
 
                     <View className="gap-3">
                       <Input
-                        label="Couleur"
-                        placeholder="Bleu indigo"
+                        label={t('Couleur', 'Color')}
+                        placeholder={t('Bleu indigo', 'Indigo blue')}
                         value={variant.colorName}
                         onChangeText={(text) =>
                           setVariants((current) =>
@@ -634,7 +669,7 @@ export default function NewProductScreen() {
                         }
                       />
                       <Input
-                        label="Poids (kg)"
+                        label={t('Poids (kg)', 'Weight (kg)')}
                         placeholder="1,4"
                         keyboardType="decimal-pad"
                         value={variant.weight}
@@ -649,7 +684,7 @@ export default function NewProductScreen() {
                         }
                       />
                       <Input
-                        label="Stock (laisser vide si non suivi)"
+                        label={t('Stock (laisser vide si non suivi)', 'Stock (leave blank if not tracked)')}
                         placeholder="5"
                         keyboardType="number-pad"
                         value={variant.stock}
@@ -676,7 +711,7 @@ export default function NewProductScreen() {
               >
                 <Ionicons name="add" size={17} color={colors.primary} />
                 <Text className="text-[12.5px] font-semibold text-primary">
-                  Ajouter une déclinaison
+                  {t('Ajouter une déclinaison', 'Add a variant')}
                 </Text>
               </Pressable>
             </>
@@ -696,7 +731,7 @@ export default function NewProductScreen() {
 
           <View className="mt-6">
             <Button onPress={handleSubmit} loading={create.isPending} fullWidth>
-              Publier le produit
+              {t('Publier le produit', 'Publish product')}
             </Button>
           </View>
         </ScrollView>

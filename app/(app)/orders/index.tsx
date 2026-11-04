@@ -9,8 +9,10 @@ import { colors } from '@/constants/colors';
 import { useAuth } from '@/hooks/useAuth';
 import { useOrders, type OrderDetail } from '@/hooks/useOrders';
 import { formatEur, formatRelative, formatWeight } from '@/lib/format';
+import { useAppLanguage } from '@/lib/appLanguage';
 
 export default function OrdersScreen() {
+  const { t } = useAppLanguage();
   const router = useRouter();
   const { isAuthenticated, isHydrated } = useAuth();
   const { data, isLoading, isError, refetch, isRefetching } = useOrders(isAuthenticated);
@@ -29,8 +31,11 @@ export default function OrdersScreen() {
       <SafeAreaView className="flex-1 bg-white" edges={['top']}>
         <AuthPrompt
           icon="receipt-outline"
-          title="Suivez vos commandes"
-          description="Créez un compte pour commander et suivre vos colis jusqu'à la livraison."
+          title={t('Suivez vos commandes', 'Track your orders')}
+          description={t(
+            "Créez un compte pour commander et suivre vos colis jusqu'à la livraison.",
+            'Create an account to place orders and track your packages through delivery.',
+          )}
           returnTo="/(app)/orders"
         />
       </SafeAreaView>
@@ -48,22 +53,22 @@ export default function OrdersScreen() {
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
       <View className="px-4 pb-2 pt-1">
-        <Text className="text-2xl font-bold text-gray-900">Mes commandes</Text>
+        <Text className="text-2xl font-bold text-gray-900">{t('Mes commandes', 'My orders')}</Text>
       </View>
 
       {isError ? (
         <EmptyState
           icon="cloud-offline-outline"
-          title="Connexion impossible"
-          actionLabel="Réessayer"
+          title={t('Connexion impossible', 'Connection failed')}
+          actionLabel={t('Réessayer', 'Try again')}
           onAction={() => void refetch()}
         />
       ) : orders.length === 0 ? (
         <EmptyState
           icon="receipt-outline"
-          title="Aucune commande"
-          description="Vos commandes et leur suivi apparaîtront ici."
-          actionLabel="Parcourir le catalogue"
+          title={t('Aucune commande', 'No orders yet')}
+          description={t('Vos commandes et leur suivi apparaîtront ici.', 'Your orders and their tracking details will appear here.')}
+          actionLabel={t('Parcourir le catalogue', 'Browse the catalog')}
           onAction={() => router.push('/(app)/(tabs)')}
         />
       ) : (
@@ -92,6 +97,7 @@ function OrderRow({
   order: OrderDetail;
   onPress: () => void;
 }) {
+  const { t } = useAppLanguage();
   const totalWeight = order.packages.reduce((sum, p) => sum + p.weight, 0);
   const itemCount = order.items.reduce((sum, i) => sum + i.quantity, 0);
 
@@ -109,8 +115,10 @@ function OrderRow({
       <View className="flex-row items-start justify-between">
         <View className="flex-1">
           <Text className="text-sm font-semibold text-gray-900">
-            {itemCount} article{itemCount > 1 ? 's' : ''} ·{' '}
-            {order.packages.length} colis
+            {t(
+              `${itemCount} article${itemCount > 1 ? 's' : ''} · ${order.packages.length} colis`,
+              `${itemCount} item${itemCount === 1 ? '' : 's'} · ${order.packages.length} package${order.packages.length === 1 ? '' : 's'}`,
+            )}
           </Text>
           <Text className="mt-0.5 text-xs text-gray-500">
             {order.deliveryCity}, {order.deliveryCountry} ·{' '}
@@ -136,8 +144,10 @@ function OrderRow({
         <View className="mt-2 flex-row items-center gap-1.5 border-t border-gray-100 pt-2">
           <Ionicons name="alert-circle-outline" size={14} color="#B45309" />
           <Text className="text-xs text-amber-700">
-            {refusedCount} colis refusé{refusedCount > 1 ? 's' : ''} et
-            remboursé{refusedCount > 1 ? 's' : ''}
+            {t(
+              `${refusedCount} colis refusé${refusedCount > 1 ? 's' : ''} et remboursé${refusedCount > 1 ? 's' : ''}`,
+              `${refusedCount} package${refusedCount === 1 ? '' : 's'} refused and refunded`,
+            )}
           </Text>
         </View>
       )}

@@ -18,10 +18,11 @@ import {
   type LegalDocumentId,
 } from '@/hooks/useLegal';
 import { useMe } from '@/hooks/useMe';
+import { useAppLanguage } from '@/lib/appLanguage';
 
-const TABS: { id: LegalDocumentId; label: string }[] = [
-  { id: 'terms', label: 'Conditions générales' },
-  { id: 'privacy', label: 'Confidentialité' },
+const TABS: { id: LegalDocumentId }[] = [
+  { id: 'terms' },
+  { id: 'privacy' },
 ];
 
 /**
@@ -30,6 +31,7 @@ const TABS: { id: LegalDocumentId; label: string }[] = [
  * documents, un moteur Markdown serait une dépendance pour rien.
  */
 function LegalBody({ id }: { id: LegalDocumentId }) {
+  const { language, t } = useAppLanguage();
   const { data, isLoading, isError, refetch } = useLegalDocument(id);
 
   if (isLoading) {
@@ -44,11 +46,14 @@ function LegalBody({ id }: { id: LegalDocumentId }) {
     return (
       <View className="items-center gap-3 py-10">
         <Text className="text-center text-[13px] text-gray-500">
-          Impossible de charger le texte. Vérifiez votre connexion.
+          {t(
+            'Impossible de charger le texte. Vérifiez votre connexion.',
+            'Unable to load the text. Check your connection.',
+          )}
         </Text>
         <Pressable onPress={() => void refetch()} accessibilityRole="button">
           <Text className="text-[13px] font-semibold text-primary">
-            Réessayer
+            {t('Réessayer', 'Try again')}
           </Text>
         </Pressable>
       </View>
@@ -58,8 +63,13 @@ function LegalBody({ id }: { id: LegalDocumentId }) {
   return (
     <View>
       <Text className="mb-3 text-[11px] text-gray-400">
-        Version {data.version} · mise à jour le{' '}
-        {new Date(data.updatedAt).toLocaleDateString('fr-FR')}
+        {t(
+          `Version ${data.version} · mise à jour le`,
+          `Version ${data.version} · updated on`,
+        )}{' '}
+        {new Date(data.updatedAt).toLocaleDateString(
+          language === 'fr' ? 'fr-FR' : 'en-US',
+        )}
       </Text>
 
       {data.body.split('\n\n').map((block, index) => {
@@ -103,6 +113,7 @@ function LegalBody({ id }: { id: LegalDocumentId }) {
  * doit pas permettre de passer outre.
  */
 export function TermsGate() {
+  const { language, t } = useAppLanguage();
   const { me } = useMe();
   const accept = useAcceptTerms();
   const logout = useLogout();
@@ -123,12 +134,20 @@ export function TermsGate() {
       <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
         <View className="border-b border-gray-100 px-4 pb-3 pt-2">
           <Text className="text-[20px] font-bold text-gray-900">
-            {isUpdate ? 'Nos conditions ont changé' : 'Avant de commencer'}
+            {isUpdate
+              ? t('Nos conditions ont changé', 'Our terms have changed')
+              : t('Avant de commencer', 'Before you begin')}
           </Text>
           <Text className="mt-1 text-[13px] leading-5 text-gray-500">
             {isUpdate
-              ? 'Merci de relire et d’accepter la nouvelle version pour continuer à utiliser Luuma.'
-              : 'Prenez un instant pour lire nos conditions et notre politique de confidentialité.'}
+              ? t(
+                  'Merci de relire et d’accepter la nouvelle version pour continuer à utiliser Luuma.',
+                  'Please review and accept the new version to continue using Luuma.',
+                )
+              : t(
+                  'Prenez un instant pour lire nos conditions et notre politique de confidentialité.',
+                  'Please take a moment to read our terms and privacy policy.',
+                )}
           </Text>
 
           <View className="mt-3.5 flex-row gap-2">
@@ -149,7 +168,9 @@ export function TermsGate() {
                       active ? 'text-white' : 'text-gray-600',
                     ].join(' ')}
                   >
-                    {item.label}
+                    {item.id === 'terms'
+                      ? t('Conditions générales', 'Terms of service')
+                      : t('Confidentialité', 'Privacy')}
                   </Text>
                 </Pressable>
               );
@@ -160,7 +181,7 @@ export function TermsGate() {
         <ScrollView
           className="flex-1"
           contentContainerClassName="px-4 py-4"
-          showsVerticalScrollIndicator
+          showsVerticalScrollIndicator={false}
         >
           <LegalBody id={tab} />
         </ScrollView>
@@ -169,29 +190,44 @@ export function TermsGate() {
           <Checkbox
             checked={acceptedTerms}
             onChange={setAcceptedTerms}
-            accessibilityLabel="J'accepte les conditions générales et la politique de confidentialité"
+            accessibilityLabel={t(
+              "J'accepte les conditions générales et la politique de confidentialité",
+              'I accept the terms of service and privacy policy',
+            )}
           >
             <Text className="text-[13px] leading-5 text-gray-700">
-              J'ai lu et j'accepte les conditions générales et la politique de
-              confidentialité de Luuma.
+              {t(
+                "J'ai lu et j'accepte les conditions générales et la politique de confidentialité de Luuma.",
+                'I have read and accept Luuma’s terms of service and privacy policy.',
+              )}
             </Text>
           </Checkbox>
 
           <Checkbox
             checked={acceptedMarketing}
             onChange={setAcceptedMarketing}
-            accessibilityLabel="Recevoir les nouveautés et offres de Luuma"
+            accessibilityLabel={t(
+              'Recevoir les nouveautés et offres de Luuma',
+              'Receive Luuma updates and offers',
+            )}
           >
             <Text className="text-[13px] leading-5 text-gray-600">
-              Je souhaite recevoir les nouveautés et bons plans de Luuma.
-              <Text className="text-gray-400"> (facultatif)</Text>
+              {t(
+                'Je souhaite recevoir les nouveautés et bons plans de Luuma.',
+                'I would like to receive Luuma updates and special offers.',
+              )}
+              <Text className="text-gray-400">
+                {t(' (facultatif)', ' (optional)')}
+              </Text>
             </Text>
           </Checkbox>
 
           {accept.isError ? (
             <Text className="text-center text-[12.5px] text-red-500">
-              L'enregistrement a échoué. Vérifiez votre connexion puis
-              réessayez.
+              {t(
+                "L'enregistrement a échoué. Vérifiez votre connexion puis réessayez.",
+                'Saving failed. Check your connection and try again.',
+              )}
             </Text>
           ) : null}
 
@@ -204,7 +240,7 @@ export function TermsGate() {
             loading={accept.isPending}
             fullWidth
           >
-            Continuer
+            {t('Continuer', 'Continue')}
           </Button>
 
           {/* Porte de sortie. Un écran qu'on ne peut ni accepter ni quitter
@@ -215,11 +251,14 @@ export function TermsGate() {
             disabled={logout.isPending}
             hitSlop={8}
             accessibilityRole="button"
-            accessibilityLabel="Refuser et se déconnecter"
+            accessibilityLabel={t(
+              'Refuser et se déconnecter',
+              'Decline and log out',
+            )}
             className="self-center py-1"
           >
             <Text className="text-[12px] text-gray-500">
-              Refuser et se déconnecter
+              {t('Refuser et se déconnecter', 'Decline and log out')}
             </Text>
           </Pressable>
         </View>

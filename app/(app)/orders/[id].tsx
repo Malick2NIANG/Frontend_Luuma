@@ -10,15 +10,16 @@ import { colors } from '@/constants/colors';
 import { useOrderChat } from '@/hooks/useChat';
 import { useCancelOrder, useOrder } from '@/hooks/useOrders';
 import { formatDate, formatEur, formatWeight } from '@/lib/format';
+import { useAppLanguage } from '@/lib/appLanguage';
 import type { PackageStatus } from '@/types/api.types';
 
 /** Étapes visibles par le client, dans l'ordre du parcours réel d'un colis. */
-const PACKAGE_STEPS: { status: PackageStatus; label: string }[] = [
-  { status: 'AWAITING_DROPOFF', label: 'En préparation' },
-  { status: 'DROPPED_OFF', label: 'Déposé chez le GP' },
-  { status: 'RECEIVED_BY_GP', label: 'Réceptionné' },
-  { status: 'IN_TRANSIT', label: 'En voyage' },
-  { status: 'DELIVERED', label: 'Livré' },
+const PACKAGE_STEPS: { status: PackageStatus; label: string; english: string }[] = [
+  { status: 'AWAITING_DROPOFF', label: 'En préparation', english: 'Preparing' },
+  { status: 'DROPPED_OFF', label: 'Déposé chez le GP', english: 'Dropped off with the personal shopper' },
+  { status: 'RECEIVED_BY_GP', label: 'Réceptionné', english: 'Received' },
+  { status: 'IN_TRANSIT', label: 'En voyage', english: 'In transit' },
+  { status: 'DELIVERED', label: 'Livré', english: 'Delivered' },
 ];
 
 const PACKAGE_LABELS: Record<PackageStatus, string> = {
@@ -30,8 +31,18 @@ const PACKAGE_LABELS: Record<PackageStatus, string> = {
   REFUSED: 'Refusé par le GP',
   CANCELLED: 'Annulé',
 };
+const PACKAGE_LABELS_EN: Record<PackageStatus, string> = {
+  AWAITING_DROPOFF: 'Preparing',
+  DROPPED_OFF: 'Dropped off with the personal shopper',
+  RECEIVED_BY_GP: 'Received',
+  IN_TRANSIT: 'In transit',
+  DELIVERED: 'Delivered',
+  REFUSED: 'Refused by the personal shopper',
+  CANCELLED: 'Cancelled',
+};
 
 export default function OrderDetailScreen() {
+  const { t } = useAppLanguage();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const goBack = useGoBack('/(app)/orders');
@@ -53,8 +64,8 @@ export default function OrderDetailScreen() {
       <SafeAreaView className="flex-1 bg-white">
         <EmptyState
           icon="alert-circle-outline"
-          title="Commande introuvable"
-          actionLabel="Réessayer"
+          title={t('Commande introuvable', 'Order not found')}
+          actionLabel={t('Réessayer', 'Try again')}
           onAction={() => void refetch()}
         />
       </SafeAreaView>
@@ -74,12 +85,12 @@ export default function OrderDetailScreen() {
           <Pressable
             onPress={goBack}
           accessibilityRole="button"
-          accessibilityLabel="Retour"
+          accessibilityLabel={t('Retour', 'Back')}
             className="h-10 w-10 items-center justify-center rounded-full bg-gray-100"
           >
             <Ionicons name="arrow-back" size={20} color={colors.text} />
           </Pressable>
-          <Text className="text-xl font-bold text-gray-900">Commande</Text>
+          <Text className="text-xl font-bold text-gray-900">{t('Commande', 'Order')}</Text>
         </View>
 
         {chat?.chatId && (
@@ -109,7 +120,7 @@ export default function OrderDetailScreen() {
 
         <View className="mb-5 rounded-2xl bg-gray-50 p-4">
           <Text className="text-xs font-medium uppercase tracking-wide text-gray-500">
-            Livraison
+            {t('Livraison', 'Delivery')}
           </Text>
           <Text className="mt-1 text-sm text-gray-900">
             {order.deliveryAddress}
@@ -118,12 +129,12 @@ export default function OrderDetailScreen() {
             {order.deliveryCity}, {order.deliveryCountry}
           </Text>
           <Text className="mt-2 text-xs text-gray-500">
-            Commandé le {formatDate(order.createdAt)}
+            {t('Commandé le', 'Ordered on')} {formatDate(order.createdAt)}
           </Text>
         </View>
 
         <Text className="mb-3 text-sm font-semibold text-gray-900">
-          Suivi des colis ({order.packages.length})
+          {t(`Suivi des colis (${order.packages.length})`, `Package tracking (${order.packages.length})`)}
         </Text>
 
         {order.packages.map((pkg) => {
@@ -151,22 +162,24 @@ export default function OrderDetailScreen() {
                     {pkgItems.length > 1 ? 's' : ''}
                   </Text>
                 </View>
-                <Badge label={PACKAGE_LABELS[pkg.status]} />
+                <Badge label={t(PACKAGE_LABELS[pkg.status], PACKAGE_LABELS_EN[pkg.status])} />
               </View>
 
               {isRefused ? (
                 <View className="mt-3 border-t border-red-200 pt-3">
                   <Text className="text-xs font-medium text-red-800">
-                    Motif du refus
+                    {t('Motif du refus', 'Reason for refusal')}
                   </Text>
                   <Text className="mt-0.5 text-xs text-red-700">
-                    {pkg.refusalReason ?? 'Non précisé'}
+                    {pkg.refusalReason ?? t('Non précisé', 'Not specified')}
                   </Text>
                   {/* Le refus d'un colis n'annule pas le reste de la commande :
                       le dire explicitement évite l'inquiétude. */}
                   <Text className="mt-2 text-xs text-red-700">
-                    Ces articles vous ont été remboursés. Les autres colis
-                    poursuivent leur acheminement.
+                    {t(
+                      'Ces articles vous ont été remboursés. Les autres colis poursuivent leur acheminement.',
+                      'These items have been refunded. The other packages are still on their way.',
+                    )}
                   </Text>
                 </View>
               ) : (
@@ -189,7 +202,7 @@ export default function OrderDetailScreen() {
                             done ? 'text-gray-900' : 'text-gray-400',
                           ].join(' ')}
                         >
-                          {step.label}
+                          {t(step.label, step.english)}
                         </Text>
                       </View>
                     );
@@ -220,14 +233,14 @@ export default function OrderDetailScreen() {
         })}
 
         <View className="mt-2 rounded-2xl bg-gray-50 p-4">
-          <SummaryRow label="Produits" value={formatEur(order.subtotalEur)} />
-          <SummaryRow label="Transport" value={formatEur(order.shippingEur)} />
+          <SummaryRow label={t('Produits', 'Products')} value={formatEur(order.subtotalEur)} />
+          <SummaryRow label={t('Transport', 'Shipping')} value={formatEur(order.shippingEur)} />
           <SummaryRow
-            label="Frais de service"
+            label={t('Frais de service', 'Service fee')}
             value={formatEur(order.platformFeeEur)}
           />
           <View className="mt-2 flex-row justify-between border-t border-gray-200 pt-2">
-            <Text className="text-sm font-semibold text-gray-900">Total</Text>
+            <Text className="text-sm font-semibold text-gray-900">{t('Total', 'Total')}</Text>
             <Text className="text-sm font-bold text-primary">
               {formatEur(order.totalEur)}
             </Text>
@@ -242,7 +255,7 @@ export default function OrderDetailScreen() {
             className="mt-5"
             onPress={() => void cancelOrder.mutateAsync(order.id)}
           >
-            Annuler la commande
+            {t('Annuler la commande', 'Cancel order')}
           </Button>
         )}
 

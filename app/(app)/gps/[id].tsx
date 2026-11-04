@@ -9,8 +9,10 @@ import { colors } from '@/constants/colors';
 import { useGp } from '@/hooks/useCatalog';
 import { useToggleFollow } from '@/hooks/useFollow';
 import { daysUntil, formatDate, formatEur, formatWeight } from '@/lib/format';
+import { useAppLanguage } from '@/lib/appLanguage';
 
 export default function GpProfileScreen() {
+  const { t } = useAppLanguage();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const goBack = useGoBack('/(app)/(tabs)/search');
@@ -30,9 +32,9 @@ export default function GpProfileScreen() {
       <SafeAreaView className="flex-1 bg-white">
         <EmptyState
           icon="person-outline"
-          title="GP introuvable"
-          description="Ce profil n'est plus disponible."
-          actionLabel="Réessayer"
+          title={t('GP introuvable', 'Personal shopper not found')}
+          description={t("Ce profil n'est plus disponible.", 'This profile is no longer available.')}
+          actionLabel={t('Réessayer', 'Try again')}
           onAction={() => void refetch()}
         />
       </SafeAreaView>
@@ -45,7 +47,7 @@ export default function GpProfileScreen() {
         <Pressable
           onPress={goBack}
           accessibilityRole="button"
-          accessibilityLabel="Retour"
+          accessibilityLabel={t('Retour', 'Back')}
           className="h-10 w-10 items-center justify-center rounded-full bg-gray-100"
         >
           <Ionicons name="arrow-back" size={20} color={colors.text} />
@@ -67,18 +69,18 @@ export default function GpProfileScreen() {
               <>
                 <Ionicons name="star" size={14} color={colors.gold} />
                 <Text className="text-sm text-gray-700">
-                  {gp.rating.toFixed(1)} · {gp.totalReviews} avis
+                  {gp.rating.toFixed(1)} ·                   {gp.totalReviews} {t('avis', 'reviews')}
                 </Text>
               </>
             ) : (
-              <Text className="text-sm text-gray-500">Pas encore noté</Text>
+              <Text className="text-sm text-gray-500">{t('Pas encore noté', 'Not rated yet')}</Text>
             )}
           </View>
 
           <View className="mt-4 flex-row gap-6">
-            <Stat value={gp.totalTrips} label="voyages" />
-            <Stat value={gp.followersCount} label="abonnés" />
-            <Stat value={gp.trips.length} label="à venir" />
+            <Stat value={gp.totalTrips} label={t('voyages', 'trips')} />
+            <Stat value={gp.followersCount} label={t('abonnés', 'followers')} />
+            <Stat value={gp.trips.length} label={t('à venir', 'upcoming')} />
           </View>
 
           <Pressable
@@ -104,20 +106,20 @@ export default function GpProfileScreen() {
                 gp.isFollowedByMe ? 'text-gray-700' : 'text-white',
               ].join(' ')}
             >
-              {gp.isFollowedByMe ? 'Abonné' : "S'abonner"}
+              {gp.isFollowedByMe ? t('Abonné', 'Following') : t("S'abonner", 'Follow')}
             </Text>
           </Pressable>
         </View>
 
         <Text className="mb-3 mt-2 text-sm font-semibold text-gray-900">
-          Prochains voyages
+          {t('Prochains voyages', 'Upcoming trips')}
         </Text>
 
         {gp.trips.length === 0 ? (
           <EmptyState
             icon="airplane-outline"
-            title="Aucun voyage prévu"
-            description="Abonnez-vous pour être averti de son prochain départ."
+            title={t('Aucun voyage prévu', 'No upcoming trips')}
+            description={t('Abonnez-vous pour être averti de son prochain départ.', 'Follow to be notified of their next departure.')}
           />
         ) : (
           gp.trips.map((trip) => {
@@ -142,11 +144,11 @@ export default function GpProfileScreen() {
                 </View>
                 <Text className="mt-1 text-sm text-gray-500">
                   {formatDate(trip.departureDate)}
-                  {days > 0 ? ` · dans ${days} j` : ''}
+                  {days > 0 ? ` · ${t('dans', 'in')} ${days} ${t('j', 'd')}` : ''}
                 </Text>
                 <View className="mt-2 flex-row items-center justify-between">
                   <Text className="text-sm text-gray-700">
-                    {formatWeight(remaining)} disponibles
+                    {formatWeight(remaining)} {t('disponibles', 'available')}
                   </Text>
                   <Text className="text-sm font-semibold text-primary">
                     {formatEur(trip.pricePerKg)}/kg

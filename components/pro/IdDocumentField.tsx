@@ -5,6 +5,7 @@ import { Image } from 'expo-image';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { colors } from '@/constants/colors';
 import { useUpload } from '@/hooks/useUpload';
+import { useAppLanguage } from '@/lib/appLanguage';
 
 export interface IdDocumentFieldProps {
   /** Clé de stockage une fois l'envoi terminé. Null tant qu'il n'y a rien. */
@@ -22,6 +23,7 @@ export interface IdDocumentFieldProps {
  * administrateurs qui examinent le dossier.
  */
 export function IdDocumentField({ value, onChange }: IdDocumentFieldProps) {
+  const { t } = useAppLanguage();
   const { upload, isUploading } = useUpload();
   const [preview, setPreview] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -31,7 +33,12 @@ export function IdDocumentField({ value, onChange }: IdDocumentFieldProps) {
 
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      setError("L'accès à vos photos est nécessaire pour envoyer le document.");
+      setError(
+        t(
+          "L'accès à vos photos est nécessaire pour envoyer le document.",
+          'Photo library access is required to upload the document.',
+        ),
+      );
       return;
     }
 
@@ -56,7 +63,12 @@ export function IdDocumentField({ value, onChange }: IdDocumentFieldProps) {
 
     if (!uploaded) {
       setPreview(null);
-      setError("L'envoi du document a échoué. Réessayez.");
+      setError(
+        t(
+          "L'envoi du document a échoué. Réessayez.",
+          'The document upload failed. Try again.',
+        ),
+      );
       return;
     }
 
@@ -66,11 +78,13 @@ export function IdDocumentField({ value, onChange }: IdDocumentFieldProps) {
   return (
     <View>
       <Text className="mb-1 text-sm font-semibold text-gray-900">
-        Pièce d'identité
+        {t("Pièce d'identité", 'Identity document')}
       </Text>
       <Text className="mb-3 text-xs text-gray-500">
-        Carte d'identité ou passeport. Visible uniquement par l'équipe Luuma
-        pendant l'examen de votre dossier.
+        {t(
+          "Carte d'identité ou passeport. Visible uniquement par l'équipe Luuma pendant l'examen de votre dossier.",
+          'ID card or passport. Only visible to the Luuma team while reviewing your application.',
+        )}
       </Text>
 
       {value && preview ? (
@@ -83,7 +97,7 @@ export function IdDocumentField({ value, onChange }: IdDocumentFieldProps) {
           <View className="flex-row items-center gap-2 border-t border-gray-100 bg-emerald-50 px-3 py-2.5">
             <Ionicons name="checkmark-circle" size={17} color={colors.accent} />
             <Text className="flex-1 text-xs text-emerald-900">
-              Document envoyé
+              {t('Document envoyé', 'Document uploaded')}
             </Text>
             <Pressable
               onPress={() => {
@@ -92,7 +106,7 @@ export function IdDocumentField({ value, onChange }: IdDocumentFieldProps) {
               }}
             >
               <Text className="text-xs font-semibold text-primary">
-                Remplacer
+                {t('Remplacer', 'Replace')}
               </Text>
             </Pressable>
           </View>
@@ -102,19 +116,24 @@ export function IdDocumentField({ value, onChange }: IdDocumentFieldProps) {
           onPress={() => void pick()}
           disabled={isUploading}
           accessibilityRole="button"
-          accessibilityLabel="Ajouter une pièce d'identité"
+          accessibilityLabel={t(
+            "Ajouter une pièce d'identité",
+            'Add an identity document',
+          )}
           className="items-center justify-center rounded-xl border border-dashed border-gray-300 bg-gray-50 py-8"
         >
           {isUploading ? (
             <>
               <ActivityIndicator color={colors.primary} />
-              <Text className="mt-2 text-xs text-gray-500">Envoi en cours…</Text>
+              <Text className="mt-2 text-xs text-gray-500">
+                {t('Envoi en cours…', 'Uploading…')}
+              </Text>
             </>
           ) : (
             <>
               <Ionicons name="camera-outline" size={26} color="#9CA3AF" />
               <Text className="mt-2 text-sm font-medium text-gray-700">
-                Ajouter une photo
+                {t('Ajouter une photo', 'Add a photo')}
               </Text>
             </>
           )}

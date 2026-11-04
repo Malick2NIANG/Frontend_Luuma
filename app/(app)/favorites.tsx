@@ -17,8 +17,10 @@ import { colors } from '@/constants/colors';
 import { useAuth } from '@/hooks/useAuth';
 import { useFavorites, useToggleFavorite, type FavoriteEntry } from '@/hooks/useFavorites';
 import { formatEur, formatWeight, formatXof } from '@/lib/format';
+import { useAppLanguage } from '@/lib/appLanguage';
 
 export default function FavoritesScreen() {
+  const { t } = useAppLanguage();
   const router = useRouter();
   const goBack = useGoBack('/(app)/(tabs)/profile');
   const { isAuthenticated, isHydrated } = useAuth();
@@ -38,8 +40,11 @@ export default function FavoritesScreen() {
         <Header onBack={goBack} />
         <AuthPrompt
           icon="heart-outline"
-          title="Gardez vos coups de cœur"
-          description="Créez un compte pour retrouver les produits qui vous plaisent, sur tous vos appareils."
+          title={t('Gardez vos coups de cœur', 'Save your favorites')}
+          description={t(
+            'Créez un compte pour retrouver les produits qui vous plaisent, sur tous vos appareils.',
+            'Create an account to find the products you love on all your devices.',
+          )}
           returnTo="/(app)/favorites"
         />
       </SafeAreaView>
@@ -57,16 +62,19 @@ export default function FavoritesScreen() {
       ) : isError ? (
         <EmptyState
           icon="cloud-offline-outline"
-          title="Connexion impossible"
-          actionLabel="Réessayer"
+          title={t('Connexion impossible', 'Connection failed')}
+          actionLabel={t('Réessayer', 'Try again')}
           onAction={() => void refetch()}
         />
       ) : (data?.length ?? 0) === 0 ? (
         <EmptyState
           icon="heart-outline"
-          title="Aucun favori"
-          description="Touchez le cœur d'une publication pour la retrouver ici."
-          actionLabel="Parcourir le fil"
+          title={t('Aucun favori', 'No favorites yet')}
+          description={t(
+            "Touchez le cœur d'une publication pour la retrouver ici.",
+            'Tap the heart on a post to find it here.',
+          )}
+          actionLabel={t('Parcourir le fil', 'Browse the feed')}
           onAction={() => router.push('/(app)/(tabs)')}
         />
       ) : (
@@ -83,17 +91,19 @@ export default function FavoritesScreen() {
 }
 
 function Header({ onBack }: { onBack: () => void }) {
+  const { t } = useAppLanguage();
   return (
     <View className="flex-row items-center gap-3 border-b border-gray-100 px-3.5 pb-2.5 pt-1">
       <Pressable onPress={onBack} hitSlop={10}>
         <Ionicons name="arrow-back" size={22} color={colors.text} />
       </Pressable>
-      <Text className="text-lg font-bold text-gray-900">Mes favoris</Text>
+      <Text className="text-lg font-bold text-gray-900">{t('Mes favoris', 'My favorites')}</Text>
     </View>
   );
 }
 
 function FavoriteRow({ entry }: { entry: FavoriteEntry }) {
+  const { t } = useAppLanguage();
   const router = useRouter();
   const { toggle } = useToggleFavorite();
   const { product, merchant } = entry;
@@ -144,7 +154,7 @@ function FavoriteRow({ entry }: { entry: FavoriteEntry }) {
             disparaître sans un mot donnerait l'impression d'une perte. */}
         {!product.isAvailable && (
           <Text className="mt-1 text-[10px] font-semibold text-amber-700">
-            Ce produit n'est plus disponible
+            {t("Ce produit n'est plus disponible", 'This product is no longer available')}
           </Text>
         )}
       </View>

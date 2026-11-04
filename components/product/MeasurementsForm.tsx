@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Text, TextInput, View } from 'react-native';
+import { useAppLanguage } from '@/lib/appLanguage';
 
 /**
  * Libellés des mesures.
@@ -8,25 +9,26 @@ import { Text, TextInput, View } from 'react-native';
  * ces libellés changent. C'est ce qui permet de reformuler « tour_poitrine »
  * en français plus tard sans invalider les mesures déjà enregistrées.
  */
-const MEASUREMENT_LABELS: Record<string, string> = {
-  tour_poitrine: 'Tour de poitrine',
-  tour_taille: 'Tour de taille',
-  tour_hanches: 'Tour de hanches',
-  tour_cou: 'Tour de cou',
-  tour_bras: 'Tour de bras',
-  tour_cuisse: 'Tour de cuisse',
-  longueur_dos: 'Longueur de dos',
-  longueur_manche: 'Longueur de manche',
-  longueur_jambe: 'Longueur de jambe',
-  longueur_totale: 'Longueur totale',
-  carrure: 'Carrure',
-  epaule: 'Épaule',
+const MEASUREMENT_LABELS: Record<string, [string, string]> = {
+  tour_poitrine: ['Tour de poitrine', 'Chest'],
+  tour_taille: ['Tour de taille', 'Waist'],
+  tour_hanches: ['Tour de hanches', 'Hips'],
+  tour_cou: ['Tour de cou', 'Neck'],
+  tour_bras: ['Tour de bras', 'Arm'],
+  tour_cuisse: ['Tour de cuisse', 'Thigh'],
+  longueur_dos: ['Longueur de dos', 'Back length'],
+  longueur_manche: ['Longueur de manche', 'Sleeve length'],
+  longueur_jambe: ['Longueur de jambe', 'Leg length'],
+  longueur_totale: ['Longueur totale', 'Total length'],
+  carrure: ['Carrure', 'Shoulder width'],
+  epaule: ['Épaule', 'Shoulder'],
 };
 
-function labelFor(key: string): string {
+function labelFor(key: string, t: (french: string, english: string) => string): string {
   // Repli lisible plutôt que la clé brute : un commerçant peut inventer une
   // mesure que cette table ne connaît pas encore.
-  return MEASUREMENT_LABELS[key] ?? key.replace(/_/g, ' ');
+  const label = MEASUREMENT_LABELS[key];
+  return label ? t(...label) : key.replace(/_/g, ' ');
 }
 
 export interface MeasurementsFormProps {
@@ -42,6 +44,8 @@ export function MeasurementsForm({
   productionDays,
   onChange,
 }: MeasurementsFormProps) {
+  const { t } = useAppLanguage();
+
   const setValue = (key: string, raw: string) => {
     const digits = raw.replace(/[^0-9]/g, '');
     const next = { ...values };
@@ -55,18 +59,20 @@ export function MeasurementsForm({
   return (
     <View>
       <Text className="mb-1 text-sm font-semibold text-gray-900">
-        Vos mesures
+        {t('Vos mesures', 'Your measurements')}
       </Text>
       <Text className="mb-3 text-xs text-gray-500">
-        En centimètres. Elles sont transmises au commerçant et conservées avec
-        votre commande.
+        {t(
+          'En centimètres. Elles sont transmises au commerçant et conservées avec votre commande.',
+          'In centimeters. They are shared with the merchant and saved with your order.',
+        )}
       </Text>
 
       <View className="gap-2.5">
         {required.map((key) => (
           <View key={key} className="flex-row items-center gap-3">
             <Text className="flex-1 text-[13px] text-gray-700">
-              {labelFor(key)}
+              {labelFor(key, t)}
             </Text>
             <View className="flex-row items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-2">
               <TextInput
@@ -75,7 +81,10 @@ export function MeasurementsForm({
                 keyboardType="number-pad"
                 placeholder="—"
                 placeholderTextColor="#9CA3AF"
-                accessibilityLabel={`${labelFor(key)} en centimètres`}
+                accessibilityLabel={t(
+                  `${labelFor(key, t)} en centimètres`,
+                  `${labelFor(key, t)} in centimeters`,
+                )}
                 className="w-14 text-center text-[13px] text-gray-900"
               />
               <Text className="text-[11px] text-gray-400">cm</Text>
@@ -91,8 +100,10 @@ export function MeasurementsForm({
         <View className="mt-4 flex-row items-start gap-2 rounded-xl bg-amber-50 px-3 py-2.5">
           <Ionicons name="time-outline" size={16} color="#B45309" />
           <Text className="flex-1 text-xs leading-4 text-amber-800">
-            Confection en {productionDays} jours. Seuls les GP partant après ce
-            délai pourront transporter votre commande.
+            {t(
+              `Confection en ${productionDays} jours. Seuls les GP partant après ce délai pourront transporter votre commande.`,
+              `Made in ${productionDays} days. Only travelers departing after this time can carry your order.`,
+            )}
           </Text>
         </View>
       ) : null}

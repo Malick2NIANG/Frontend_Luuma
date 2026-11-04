@@ -18,6 +18,7 @@ import { colors } from '@/constants/colors';
 import { useTripSearch } from '@/hooks/useCatalog';
 import { formatWeight } from '@/lib/format';
 import { cartTotalWeight, useCartStore } from '@/store/cart.store';
+import { useAppLanguage } from '@/lib/appLanguage';
 
 /** Destinations où la diaspora sénégalaise est la plus présente. */
 const COMMON_DESTINATIONS: { city: string; country: string; label: string }[] = [
@@ -31,6 +32,7 @@ const COMMON_DESTINATIONS: { city: string; country: string; label: string }[] = 
 ];
 
 export default function TripSelectionScreen() {
+  const { t } = useAppLanguage();
   const router = useRouter();
   const goBack = useGoBack('/(app)/cart');
   const items = useCartStore((s) => s.items);
@@ -81,15 +83,15 @@ export default function TripSelectionScreen() {
         <Pressable
           onPress={goBack}
           accessibilityRole="button"
-          accessibilityLabel="Retour"
+          accessibilityLabel={t('Retour', 'Back')}
           className="h-10 w-10 items-center justify-center rounded-full bg-gray-100"
         >
           <Ionicons name="arrow-back" size={20} color={colors.text} />
         </Pressable>
         <View className="flex-1">
-          <Text className="text-xl font-bold text-gray-900">Choisir un GP</Text>
+          <Text className="text-xl font-bold text-gray-900">{t('Choisir un GP', 'Choose a personal shopper')}</Text>
           <Text className="text-xs text-gray-500">
-            Panier : {formatWeight(requiredWeight)}
+            {t('Panier', 'Cart')} : {formatWeight(requiredWeight)}
           </Text>
         </View>
       </View>
@@ -97,7 +99,7 @@ export default function TripSelectionScreen() {
       <ScrollView className="flex-1" contentContainerClassName="pb-6">
         <View className="px-4">
           <Text className="mb-2 text-sm font-semibold text-gray-900">
-            Où souhaitez-vous être livré ?
+            {t('Où souhaitez-vous être livré ?', 'Where would you like your order delivered?')}
           </Text>
 
           <View className="flex-row flex-wrap gap-2">
@@ -126,7 +128,7 @@ export default function TripSelectionScreen() {
                       active ? 'text-white' : 'text-gray-700',
                     ].join(' ')}
                   >
-                    {dest.label}
+                    {t(dest.label, dest.label === 'Bruxelles' ? 'Brussels' : dest.label)}
                   </Text>
                 </Pressable>
               );
@@ -136,13 +138,13 @@ export default function TripSelectionScreen() {
           {/* La couverture dépend des GP inscrits, pas d'une liste figée :
               une saisie libre reste indispensable. */}
           <Text className="mb-2 mt-4 text-xs text-gray-500">
-            Autre destination
+            {t('Autre destination', 'Other destination')}
           </Text>
           <View className="flex-row gap-2">
             <TextInput
               value={customCity}
               onChangeText={setCustomCity}
-              placeholder="Ville"
+              placeholder={t('Ville', 'City')}
               placeholderTextColor="#9CA3AF"
               className="flex-1 rounded-xl bg-gray-100 px-3 py-2.5 text-base text-gray-900"
             />
@@ -165,8 +167,11 @@ export default function TripSelectionScreen() {
           {!destination ? (
             <EmptyState
               icon="location-outline"
-              title="Choisissez une destination"
-              description="Nous afficherons les GP qui s'y rendent prochainement."
+              title={t('Choisissez une destination', 'Choose a destination')}
+              description={t(
+                "Nous afficherons les GP qui s'y rendent prochainement.",
+                'We will show personal shoppers travelling there soon.',
+              )}
             />
           ) : isLoading ? (
             <View className="items-center py-12">
@@ -175,20 +180,26 @@ export default function TripSelectionScreen() {
           ) : isError ? (
             <EmptyState
               icon="cloud-offline-outline"
-              title="Connexion impossible"
-              actionLabel="Réessayer"
+              title={t('Connexion impossible', 'Connection failed')}
+              actionLabel={t('Réessayer', 'Try again')}
               onAction={() => void refetch()}
             />
           ) : sortedTrips.length === 0 ? (
             <EmptyState
               icon="airplane-outline"
-              title="Aucun GP vers cette destination"
-              description={`Personne ne voyage vers ${destination.city} pour le moment. Essayez une autre ville ou revenez plus tard.`}
+              title={t('Aucun GP vers cette destination', 'No personal shoppers travelling to this destination')}
+              description={t(
+                `Personne ne voyage vers ${destination.city} pour le moment. Essayez une autre ville ou revenez plus tard.`,
+                `No one is travelling to ${destination.city} right now. Try another city or check back later.`,
+              )}
             />
           ) : (
             <>
               <Text className="mb-3 text-sm font-semibold text-gray-900">
-                {sortedTrips.length} GP vers {destination.city}
+                {t(
+                  `${sortedTrips.length} GP vers ${destination.city}`,
+                  `${sortedTrips.length} personal shopper${sortedTrips.length === 1 ? '' : 's'} travelling to ${destination.city}`,
+                )}
               </Text>
               {sortedTrips.map((trip) => (
                 <TripCard

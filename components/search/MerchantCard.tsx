@@ -4,9 +4,11 @@ import { Pressable, Text, View } from 'react-native';
 import { Avatar } from '@/components/ui/Avatar';
 import { RoleMark } from '@/components/ui/RoleMark';
 import type { SearchMerchant } from '@/hooks/useSearch';
+import { useAppLanguage } from '@/lib/appLanguage';
 
 export function MerchantCard({ merchant }: { merchant: SearchMerchant }) {
   const router = useRouter();
+  const { t } = useAppLanguage();
 
   return (
     <Pressable
@@ -26,10 +28,11 @@ export function MerchantCard({ merchant }: { merchant: SearchMerchant }) {
           {merchant.city}
           {merchant.totalReviews > 0
             ? ` · ★ ${merchant.rating.toFixed(1)} (${merchant.totalReviews})`
-            : ' · Nouvelle boutique'}
-          {` · ${merchant._count.products} produit${
-            merchant._count.products > 1 ? 's' : ''
-          }`}
+            : ` · ${t('Nouvelle boutique', 'New shop')}`}
+          {` · ${merchant._count.products} ${t(
+            merchant._count.products > 1 ? 'produits' : 'produit',
+            merchant._count.products > 1 ? 'products' : 'product',
+          )}`}
         </Text>
         {merchant.description ? (
           <Text numberOfLines={1} className="mt-0.5 text-[11px] text-gray-400">

@@ -2,6 +2,7 @@ import { Image } from 'expo-image';
 import { Text, View } from 'react-native';
 import { VoiceMessagePlayer } from '@/components/ui/VoiceMessagePlayer';
 import type { ChatMessage } from '@/hooks/useChat';
+import { useAppLanguage } from '@/lib/appLanguage';
 import { formatTime } from '@/lib/format';
 
 export interface MessageBubbleProps {
@@ -12,6 +13,8 @@ export interface MessageBubbleProps {
 }
 
 export function MessageBubble({ message, isOwn, showSender }: MessageBubbleProps) {
+  const { t } = useAppLanguage();
+
   return (
     <View className={['mb-2 max-w-[82%]', isOwn ? 'self-end' : 'self-start'].join(' ')}>
       {showSender && !isOwn ? (
@@ -44,7 +47,7 @@ export function MessageBubble({ message, isOwn, showSender }: MessageBubbleProps
           />
         ) : (
           <Text className={isOwn ? 'text-sm text-white' : 'text-sm text-gray-900'}>
-            Pièce jointe
+            {t('Pièce jointe', 'Attachment')}
           </Text>
         )}
 

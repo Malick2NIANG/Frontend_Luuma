@@ -23,11 +23,13 @@ import {
   type PayoutMethod,
 } from '@/hooks/useProfessional';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
+import { useAppLanguage } from '@/lib/appLanguage';
 
 /** Villes proposées — mêmes valeurs que le filtre de recherche. */
 const CITIES = ['Dakar', 'Thiès', 'Saint-Louis', 'Touba'];
 
 export default function MerchantOnboardingScreen() {
+  const { t } = useAppLanguage();
   const router = useRouter();
   const goBack = useGoBack('/(app)/(tabs)/profile');
   const { isReady } = useRequireAuth('/(app)/merchant/onboarding');
@@ -53,9 +55,12 @@ export default function MerchantOnboardingScreen() {
     return (
       <Outcome
         icon="checkmark-circle"
-        title="Dossier déposé"
-        description="Nous examinons votre pièce d'identité sous 48 heures. En attendant, vous pouvez déjà préparer vos produits : ils seront publiés dès la validation."
-        actionLabel="Préparer ma boutique"
+        title={t('Dossier déposé', 'Application submitted')}
+        description={t(
+          "Nous examinons votre pièce d'identité sous 48 heures. En attendant, vous pouvez déjà préparer vos produits : ils seront publiés dès la validation.",
+          'We will review your identity document within 48 hours. In the meantime, you can prepare your products; they will be published once approved.',
+        )}
+        actionLabel={t('Préparer ma boutique', 'Set up my shop')}
         onAction={() => router.replace('/(app)/(tabs)/profile')}
       />
     );
@@ -67,9 +72,9 @@ export default function MerchantOnboardingScreen() {
     return (
       <Outcome
         icon="storefront"
-        title="Vous avez déjà une boutique"
-        description="Retrouvez-la depuis votre profil."
-        actionLabel="Aller au profil"
+        title={t('Vous avez déjà une boutique', 'You already have a shop')}
+        description={t('Retrouvez-la depuis votre profil.', 'Open it from your profile.')}
+        actionLabel={t('Aller au profil', 'Go to profile')}
         onAction={() => router.replace('/(app)/(tabs)/profile')}
       />
     );
@@ -81,9 +86,12 @@ export default function MerchantOnboardingScreen() {
     return (
       <Outcome
         icon="mail-outline"
-        title="Vérifiez d'abord votre email"
-        description="Ouvrir une boutique engage des paiements : nous devons pouvoir vous joindre de façon fiable."
-        actionLabel="Retour au profil"
+        title={t("Vérifiez d'abord votre email", 'Verify your email first')}
+        description={t(
+          'Ouvrir une boutique engage des paiements : nous devons pouvoir vous joindre de façon fiable.',
+          'Opening a shop involves payments, so we need to be able to contact you reliably.',
+        )}
+        actionLabel={t('Retour au profil', 'Back to profile')}
         onAction={() => router.replace('/(app)/(tabs)/profile')}
       />
     );
@@ -112,7 +120,7 @@ export default function MerchantOnboardingScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
-      <Header title="Ouvrir une boutique" onBack={goBack} />
+      <Header title={t('Ouvrir une boutique', 'Open a shop')} onBack={goBack} />
 
       <KeyboardAvoidingView
         className="flex-1"
@@ -123,30 +131,32 @@ export default function MerchantOnboardingScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <Text className="mb-5 text-[13px] leading-5 text-gray-600">
-            Vendez vos produits à la diaspora sénégalaise. Les GP se chargent du
-            transport ; vous préparez le colis et le remettez.
+            {t(
+              'Vendez vos produits à la diaspora sénégalaise. Les GP se chargent du transport ; vous préparez le colis et le remettez.',
+              'Sell your products to the Senegalese diaspora. Personal shoppers handle the shipping; you prepare and hand over the package.',
+            )}
           </Text>
 
           <Field
-            label="Nom de la boutique"
+            label={t('Nom de la boutique', 'Shop name')}
             value={shopName}
             onChangeText={setShopName}
-            placeholder="Chez Awa Couture"
-            error={touched && !nameValid ? 'Au moins 2 caractères.' : null}
+            placeholder={t('Chez Awa Couture', 'Awa Couture')}
+            error={touched && !nameValid ? t('Au moins 2 caractères.', 'At least 2 characters.') : null}
           />
 
           <Field
-            label="Description"
-            hint="Ce que vous vendez, en une phrase."
+            label={t('Description', 'Description')}
+            hint={t('Ce que vous vendez, en une phrase.', 'What you sell, in one sentence.')}
             value={description}
             onChangeText={setDescription}
-            placeholder="Bazin brodé main, coupe traditionnelle et moderne"
+            placeholder={t('Bazin brodé main, coupe traditionnelle et moderne', 'Hand-embroidered bazin, traditional and modern styles')}
             multiline
           />
 
           <View className="mt-4">
             <Text className="mb-2 text-sm font-semibold text-gray-900">
-              Ville
+              {t('Ville', 'City')}
             </Text>
             <View className="flex-row flex-wrap gap-2">
               {CITIES.map((item) => (
@@ -172,12 +182,12 @@ export default function MerchantOnboardingScreen() {
           </View>
 
           <Field
-            label="Adresse"
-            hint="Là où le GP viendra chercher les colis."
+            label={t('Adresse', 'Address')}
+            hint={t('Là où le GP viendra chercher les colis.', 'Where the personal shopper will pick up packages.')}
             value={address}
             onChangeText={setAddress}
-            placeholder="Rue 12 x Avenue Bourguiba, Médina"
-            error={touched && !addressValid ? 'Adresse trop courte.' : null}
+            placeholder={t('Rue 12 x Avenue Bourguiba, Médina', '12 Avenue Bourguiba, Medina')}
+            error={touched && !addressValid ? t('Adresse trop courte.', 'Address is too short.') : null}
           />
 
           <View className="mt-6">
@@ -194,7 +204,7 @@ export default function MerchantOnboardingScreen() {
             />
             {touched && !payoutValid ? (
               <Text className="mt-2 text-xs text-red-600">
-                Renseignez le compte qui recevra vos paiements.
+                {t('Renseignez le compte qui recevra vos paiements.', 'Enter the account where you would like to receive payments.')}
               </Text>
             ) : null}
           </View>
@@ -212,12 +222,12 @@ export default function MerchantOnboardingScreen() {
             loading={createMerchant.isPending}
             onPress={handleSubmit}
           >
-            Déposer mon dossier
+            {t('Déposer mon dossier', 'Submit my application')}
           </Button>
           {/* Dit avant l'envoi, pas après : personne n'aime découvrir une
               attente une fois le formulaire validé. */}
           <Text className="mt-2 text-center text-[11px] text-gray-500">
-            Examen sous 48 h. Vous pourrez préparer vos produits entre-temps.
+            {t('Examen sous 48 h. Vous pourrez préparer vos produits entre-temps.', 'Review takes up to 48 hours. You can prepare your products in the meantime.')}
           </Text>
         </View>
       </KeyboardAvoidingView>

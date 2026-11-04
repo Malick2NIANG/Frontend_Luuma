@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, Text, View } from 'react-native';
 import { colors } from '@/constants/colors';
-import { daysUntil, formatDate, formatEur, formatWeight } from '@/lib/format';
+import { daysUntil, formatEur, formatWeight } from '@/lib/format';
+import { useAppLanguage } from '@/lib/appLanguage';
 import type { Trip } from '@/types/api.types';
 
 export interface TripCardProps {
@@ -18,10 +19,15 @@ export function TripCard({
   selected = false,
   onPress,
 }: TripCardProps) {
+  const { language, t } = useAppLanguage();
   const remaining =
     Math.round((trip.maxWeight - trip.usedWeight) * 1000) / 1000;
   const fitsCart = requiredWeight == null || remaining >= requiredWeight;
   const days = daysUntil(trip.departureDate);
+  const departureDate = new Date(trip.departureDate).toLocaleDateString(
+    language === 'fr' ? 'fr-FR' : 'en-US',
+    { day: 'numeric', month: 'long', year: 'numeric' },
+  );
   const shippingCost =
     requiredWeight != null ? requiredWeight * trip.pricePerKg : null;
 
@@ -53,15 +59,20 @@ export function TripCard({
       </View>
 
       <Text className="mt-1 text-sm text-gray-500">
-        Départ le {formatDate(trip.departureDate)}
-        {days > 0 ? ` · dans ${days} j` : ''}
+        {t('Départ le', 'Departure on')} {departureDate}
+        {days > 0
+          ? ` · ${t(
+              `dans ${days} j`,
+              `in ${days} day${days === 1 ? '' : 's'}`,
+            )}`
+          : ''}
       </Text>
 
       <View className="mt-3 flex-row items-center justify-between">
         <View className="flex-row items-center gap-1">
           <Ionicons name="cube-outline" size={15} color="#6B7280" />
           <Text className="text-sm text-gray-700">
-            {formatWeight(remaining)} disponibles
+            {formatWeight(remaining)} {t('disponibles', 'available')}
           </Text>
         </View>
 
@@ -73,7 +84,7 @@ export function TripCard({
       {shippingCost != null && fitsCart && (
         <View className="mt-3 border-t border-gray-100 pt-3">
           <Text className="text-sm text-gray-600">
-            Transport de votre panier :{' '}
+            {t('Transport de votre panier :', 'Shipping for your cart:')}{' '}
             <Text className="font-semibold text-gray-900">
               {formatEur(shippingCost)}
             </Text>
@@ -85,8 +96,10 @@ export function TripCard({
         <View className="mt-3 flex-row items-center gap-1.5 border-t border-gray-100 pt-3">
           <Ionicons name="alert-circle-outline" size={15} color="#DC2626" />
           <Text className="flex-1 text-xs text-red-600">
-            Capacité insuffisante pour votre panier ({formatWeight(remaining)}{' '}
-            restants).
+            {t(
+              `Capacité insuffisante pour votre panier (${formatWeight(remaining)} restants).`,
+              `Not enough capacity for your cart (${formatWeight(remaining)} remaining).`,
+            )}
           </Text>
         </View>
       )}

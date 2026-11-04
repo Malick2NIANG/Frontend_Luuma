@@ -17,6 +17,7 @@ import {
   orderedCountries,
   type Country,
 } from '@/constants/countries';
+import { useAppLanguage } from '@/lib/appLanguage';
 
 export interface PhoneInputProps {
   label?: string;
@@ -27,6 +28,7 @@ export interface PhoneInputProps {
   value: string;
   onChangeText: (value: string) => void;
   error?: string;
+  appearance?: 'default' | 'light';
 }
 
 /**
@@ -42,56 +44,120 @@ export interface PhoneInputProps {
  * une donnée à choisir, pas une constante à préfixer.
  */
 export function PhoneInput({
-  label = 'Téléphone',
+  label,
   countryIso,
   onCountryChange,
   value,
   onChangeText,
   error,
+  appearance = 'default',
 }: PhoneInputProps) {
+  const { t } = useAppLanguage();
+  const isLight = appearance === 'light';
   const [pickerOpen, setPickerOpen] = useState(false);
   const country = findCountry(countryIso);
+  const labelText = label ?? t('Téléphone', 'Phone');
 
   return (
     <View className="w-full">
-      {label ? (
-        <Text className="mb-1 text-sm font-medium text-gray-700">{label}</Text>
+      {labelText ? (
+        <Text
+          className={[
+            'mb-1 text-sm font-medium',
+            isLight ? 'text-white' : 'text-gray-700',
+          ].join(' ')}
+        >
+          {labelText}
+        </Text>
       ) : null}
 
       <View className="flex-row gap-2">
         <Pressable
           onPress={() => setPickerOpen(true)}
           accessibilityRole="button"
-          accessibilityLabel={`Indicatif : ${country.name}, plus ${country.dial}. Modifier.`}
+          accessibilityLabel={t(
+            `Indicatif : ${country.name}, plus ${country.dial}. Modifier.`,
+            `Calling code: ${country.name}, plus ${country.dial}. Change.`,
+          )}
           className={[
             'flex-row items-center gap-1.5 rounded-xl border px-3',
-            error ? 'border-red-500' : 'border-gray-200',
+            isLight ? 'bg-white/10' : '',
+            error
+              ? isLight
+                ? 'border-red-300'
+                : 'border-red-500'
+              : isLight
+                ? 'border-white/50'
+                : 'border-gray-200',
           ].join(' ')}
+          style={
+            isLight
+              ? {
+                  backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                  borderColor: error ? '#FCA5A5' : 'rgba(255, 255, 255, 0.5)',
+                }
+              : undefined
+          }
         >
           <Flag iso={country.iso} size={17} />
-          <Text className="text-base text-gray-900">+{country.dial}</Text>
-          <Ionicons name="chevron-down" size={14} color="#9CA3AF" />
+          <Text
+            className={[
+              'text-base',
+              isLight ? 'text-white' : 'text-gray-900',
+            ].join(' ')}
+          >
+            +{country.dial}
+          </Text>
+          <Ionicons
+            name="chevron-down"
+            size={14}
+            color={isLight ? '#FFFFFF' : '#9CA3AF'}
+          />
         </Pressable>
 
         <TextInput
           placeholder="77 123 45 67"
-          placeholderTextColor="#9CA3AF"
+          placeholderTextColor={isLight ? '#FFFFFF' : '#9CA3AF'}
           keyboardType="phone-pad"
           autoComplete="tel-national"
           value={value}
           onChangeText={onChangeText}
           className={[
-            'flex-1 rounded-xl border px-4 py-3 text-base text-gray-900',
-            error ? 'border-red-500' : 'border-gray-200',
+            'flex-1 rounded-xl border px-4 py-3 text-base',
+            isLight ? 'text-white' : 'text-gray-900',
+            error
+              ? isLight
+                ? 'border-red-300'
+                : 'border-red-500'
+              : isLight
+                ? 'border-white/50'
+                : 'border-gray-200',
           ].join(' ')}
+          style={
+            isLight
+              ? {
+                  backgroundColor: 'rgba(255, 255, 255, 0.08)',
+                  borderColor: error ? '#FCA5A5' : 'rgba(255, 255, 255, 0.5)',
+                }
+              : undefined
+          }
         />
       </View>
 
-      {error ? <Text className="mt-1 text-xs text-red-500">{error}</Text> : null}
+      {error ? (
+        <Text
+          className={
+            isLight ? 'mt-1 text-xs text-white' : 'mt-1 text-xs text-red-500'
+          }
+        >
+          {error}
+        </Text>
+      ) : null}
 
       <CountryPicker
         visible={pickerOpen}
         selectedIso={countryIso}
+        appearance={appearance}
         onSelect={(iso) => {
           onCountryChange(iso);
           setPickerOpen(false);
@@ -107,12 +173,16 @@ function CountryPicker({
   selectedIso,
   onSelect,
   onClose,
+  appearance = 'default',
 }: {
   visible: boolean;
   selectedIso: string;
   onSelect: (iso: string) => void;
   onClose: () => void;
+  appearance?: 'default' | 'light';
 }) {
+  const { t } = useAppLanguage();
+  const isLight = appearance === 'light';
   const [query, setQuery] = useState('');
 
   const results = useMemo(() => {
@@ -131,41 +201,78 @@ function CountryPicker({
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>
-        <View className="flex-row items-center gap-3 border-b border-gray-100 px-3.5 pb-2.5 pt-1">
+      <SafeAreaView
+        className={isLight ? 'flex-1' : 'flex-1 bg-white'}
+        style={isLight ? { backgroundColor: '#10231A' } : undefined}
+        edges={['top', 'bottom']}
+      >
+        <View
+          className={[
+            'flex-row items-center gap-3 border-b px-3.5 pb-2.5 pt-1',
+            isLight ? 'border-white/20' : 'border-gray-100',
+          ].join(' ')}
+        >
           <Pressable
             onPress={onClose}
             hitSlop={10}
             accessibilityRole="button"
-            accessibilityLabel="Fermer"
+            accessibilityLabel={t('Fermer', 'Close')}
           >
-            <Ionicons name="close" size={24} color={colors.text} />
+            <Ionicons
+              name="close"
+              size={24}
+              color={isLight ? '#FFFFFF' : colors.text}
+            />
           </Pressable>
-          <Text className="flex-1 text-lg font-bold text-gray-900">
-            Indicatif du pays
+          <Text
+            className={[
+              'flex-1 text-lg font-bold',
+              isLight ? 'text-white' : 'text-gray-900',
+            ].join(' ')}
+          >
+            {t('Indicatif du pays', 'Country calling code')}
           </Text>
         </View>
 
         <View className="px-3.5 py-3">
-          <View className="flex-row items-center gap-2 rounded-xl bg-gray-100 px-3 py-2.5">
-            <Ionicons name="search" size={17} color="#9CA3AF" />
+          <View
+            className={[
+              'flex-row items-center gap-2 rounded-xl px-3 py-2.5',
+              isLight ? 'bg-white/10' : 'bg-gray-100',
+            ].join(' ')}
+          >
+            <Ionicons
+              name="search"
+              size={17}
+              color={isLight ? '#FFFFFF' : '#9CA3AF'}
+            />
             <TextInput
-              placeholder="Rechercher un pays ou un indicatif"
-              placeholderTextColor="#9CA3AF"
+              placeholder={t(
+                'Rechercher un pays ou un indicatif',
+                'Search for a country or calling code',
+              )}
+              placeholderTextColor={isLight ? '#FFFFFF' : '#9CA3AF'}
               value={query}
               onChangeText={setQuery}
               autoFocus
               autoCorrect={false}
-              className="flex-1 text-[15px] text-gray-900"
+              className={[
+                'flex-1 text-[15px]',
+                isLight ? 'text-white' : 'text-gray-900',
+              ].join(' ')}
             />
             {query.length > 0 ? (
               <Pressable
                 onPress={() => setQuery('')}
                 hitSlop={8}
                 accessibilityRole="button"
-                accessibilityLabel="Effacer la recherche"
+                accessibilityLabel={t('Effacer la recherche', 'Clear search')}
               >
-                <Ionicons name="close-circle" size={17} color="#9CA3AF" />
+                <Ionicons
+                  name="close-circle"
+                  size={17}
+                  color={isLight ? '#FFFFFF' : '#9CA3AF'}
+                />
               </Pressable>
             ) : null}
           </View>
@@ -176,8 +283,16 @@ function CountryPicker({
           keyExtractor={(item: Country) => item.iso}
           keyboardShouldPersistTaps="handled"
           ListEmptyComponent={
-            <Text className="px-3.5 py-8 text-center text-[13px] text-gray-500">
-              Aucun pays ne correspond à « {query} ».
+            <Text
+              className={[
+                'px-3.5 py-8 text-center text-[13px]',
+                isLight ? 'text-white' : 'text-gray-500',
+              ].join(' ')}
+            >
+              {t(
+                `Aucun pays ne correspond à « ${query} ».`,
+                `No country matches “${query}”.`,
+              )}
             </Text>
           }
           renderItem={({ item }) => {
@@ -185,18 +300,33 @@ function CountryPicker({
             return (
               <Pressable
                 onPress={() => onSelect(item.iso)}
-                className="flex-row items-center gap-3 border-b border-gray-50 px-3.5 py-3"
+                className={[
+                  'flex-row items-center gap-3 border-b px-3.5 py-3',
+                  isLight ? 'border-white/10' : 'border-gray-50',
+                ].join(' ')}
               >
                 <Flag iso={item.iso} size={20} />
-                <Text className="flex-1 text-[14px] text-gray-900">
+                <Text
+                  className={[
+                    'flex-1 text-[14px]',
+                    isLight ? 'text-white' : 'text-gray-900',
+                  ].join(' ')}
+                >
                   {item.name}
                 </Text>
-                <Text className="text-[13px] text-gray-500">+{item.dial}</Text>
+                <Text
+                  className={[
+                    'text-[13px]',
+                    isLight ? 'text-white' : 'text-gray-500',
+                  ].join(' ')}
+                >
+                  +{item.dial}
+                </Text>
                 {selected ? (
                   <Ionicons
                     name="checkmark"
                     size={18}
-                    color={colors.primary}
+                    color={isLight ? '#FFFFFF' : colors.primary}
                   />
                 ) : (
                   <View className="w-[18px]" />

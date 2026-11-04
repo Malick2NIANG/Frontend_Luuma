@@ -3,6 +3,7 @@ import {
   PAYOUT_LABELS,
   type GpPayoutMethod,
 } from '@/hooks/useProfessional';
+import { useAppLanguage } from '@/lib/appLanguage';
 
 export interface PayoutFieldProps<T extends string> {
   methods: readonly T[];
@@ -16,8 +17,14 @@ export interface PayoutFieldProps<T extends string> {
 const ACCOUNT_PLACEHOLDERS: Record<GpPayoutMethod, string> = {
   wave: '+221 7X XXX XX XX',
   orange_money: '+221 7X XXX XX XX',
-  bank: 'IBAN ou numéro de compte',
-  stripe: 'Adresse email du compte Stripe',
+  bank: 'IBAN or account number',
+  stripe: 'Stripe account email address',
+};
+const PAYOUT_LABELS_EN: Record<GpPayoutMethod, string> = {
+  wave: 'Wave',
+  orange_money: 'Orange Money',
+  bank: 'Bank transfer',
+  stripe: 'Card (Stripe)',
 };
 
 /**
@@ -35,13 +42,18 @@ export function PayoutField<T extends GpPayoutMethod>({
   onMethodChange,
   onAccountChange,
 }: PayoutFieldProps<T>) {
+  const { t } = useAppLanguage();
+
   return (
     <View>
       <Text className="mb-1 text-sm font-semibold text-gray-900">
-        Comment souhaitez-vous être payé ?
+        {t('Comment souhaitez-vous être payé ?', 'How would you like to be paid?')}
       </Text>
       <Text className="mb-3 text-xs text-gray-500">
-        Vos gains y seront versés après chaque livraison confirmée.
+        {t(
+          'Vos gains y seront versés après chaque livraison confirmée.',
+          'Your earnings will be paid out here after each confirmed delivery.',
+        )}
       </Text>
 
       <View className="gap-2">
@@ -65,7 +77,7 @@ export function PayoutField<T extends GpPayoutMethod>({
                 ].join(' ')}
               />
               <Text className="text-sm text-gray-800">
-                {PAYOUT_LABELS[item]}
+                {t(PAYOUT_LABELS[item], PAYOUT_LABELS_EN[item])}
               </Text>
             </Pressable>
           );
@@ -76,7 +88,16 @@ export function PayoutField<T extends GpPayoutMethod>({
         <TextInput
           value={account}
           onChangeText={onAccountChange}
-          placeholder={ACCOUNT_PLACEHOLDERS[method]}
+          placeholder={
+            method === 'bank' || method === 'stripe'
+              ? t(
+                  method === 'bank'
+                    ? 'IBAN ou numéro de compte'
+                    : 'Adresse email du compte Stripe',
+                  ACCOUNT_PLACEHOLDERS[method],
+                )
+              : ACCOUNT_PLACEHOLDERS[method]
+          }
           placeholderTextColor="#9CA3AF"
           keyboardType={
             method === 'wave' || method === 'orange_money'
@@ -84,7 +105,10 @@ export function PayoutField<T extends GpPayoutMethod>({
               : 'default'
           }
           autoCapitalize="none"
-          accessibilityLabel="Identifiant du compte de versement"
+          accessibilityLabel={t(
+            'Identifiant du compte de versement',
+            'Payout account details',
+          )}
           className="mt-3 rounded-xl border border-gray-200 px-3.5 py-3 text-sm text-gray-900"
         />
       ) : null}

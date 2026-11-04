@@ -11,6 +11,7 @@ import {
 } from '@/hooks/useAdminAccess';
 import { useGoBack } from '@/hooks/useGoBack';
 import { useMe } from '@/hooks/useMe';
+import { useAppLanguage } from '@/lib/appLanguage';
 
 /**
  * Espace d'administration.
@@ -24,6 +25,7 @@ import { useMe } from '@/hooks/useMe';
  * l'expérience : montrer un écran de code plutôt que des erreurs 403.
  */
 export default function AdminScreen() {
+  const { t } = useAppLanguage();
   const { me, can, isLoading: meLoading } = useMe();
   const router = useRouter();
   const goBack = useGoBack('/(app)/(tabs)/profile');
@@ -68,11 +70,11 @@ export default function AdminScreen() {
           onPress={goBack}
           hitSlop={12}
           accessibilityRole="button"
-          accessibilityLabel="Revenir au profil"
+          accessibilityLabel={t('Revenir au profil', 'Back to profile')}
         >
           <Ionicons name="arrow-back" size={24} color="#1A1A1A" />
         </Pressable>
-        <Text className="text-base font-bold text-gray-900">Administration</Text>
+        <Text className="text-base font-bold text-gray-900">{t('Administration', 'Administration')}</Text>
         {/* Refermer l'espace sans se déconnecter : sur un poste partagé, on
             veut rendre l'ordinateur, pas perdre sa session. */}
         <Pressable
@@ -82,7 +84,7 @@ export default function AdminScreen() {
           disabled={revoke.isPending}
           hitSlop={12}
           accessibilityRole="button"
-          accessibilityLabel="Quitter l'espace d'administration"
+          accessibilityLabel={t("Quitter l'espace d'administration", 'Leave the admin area')}
         >
           <Ionicons name="lock-closed-outline" size={22} color="#6B7280" />
         </Pressable>
@@ -93,18 +95,18 @@ export default function AdminScreen() {
           <ActivityIndicator color={colors.primary} />
         ) : stats.isError ? (
           <Text className="text-center text-sm text-red-500">
-            Impossible de charger les statistiques.
+            {t('Impossible de charger les statistiques.', 'Unable to load statistics.')}
           </Text>
         ) : stats.data ? (
           <>
             <View className="gap-3">
               <Text className="text-[11px] font-semibold uppercase tracking-wide text-gray-400">
-                Dossiers en attente
+                {t('Dossiers en attente', 'Pending applications')}
               </Text>
               <View className="flex-row gap-3">
                 <PendingCard
                   icon="storefront-outline"
-                  label="Commerçants"
+                  label={t('Commerçants', 'Shops')}
                   count={stats.data.merchants.pending}
                   onPress={() => router.push('/(app)/admin/applications')}
                 />
@@ -124,18 +126,18 @@ export default function AdminScreen() {
               <View className="rounded-2xl bg-white p-4">
                 <StatRow label="Comptes" value={stats.data.users} />
                 <StatRow
-                  label="Boutiques validées"
+                  label={t('Boutiques validées', 'Approved shops')}
                   value={stats.data.merchants.approved}
                 />
-                <StatRow label="GP validés" value={stats.data.gps.approved} />
-                <StatRow label="Produits en ligne" value={stats.data.products} />
-                <StatRow label="Trajets à venir" value={stats.data.activeTrips} />
+                <StatRow label={t('GP validés', 'Approved personal shoppers')} value={stats.data.gps.approved} />
+                <StatRow label={t('Produits en ligne', 'Products listed')} value={stats.data.products} />
+                <StatRow label={t('Trajets à venir', 'Upcoming trips')} value={stats.data.activeTrips} />
                 <StatRow
-                  label="Colis refusés"
+                  label={t('Colis refusés', 'Packages refused')}
                   value={stats.data.refusedPackages}
                 />
                 <StatRow
-                  label="Sous séquestre"
+                  label={t('Sous séquestre', 'Held in escrow')}
                   value={`${stats.data.escrowHeldEur.toFixed(2)} €`}
                   last
                 />
@@ -146,9 +148,10 @@ export default function AdminScreen() {
                 évite de chercher un écran qui n'existe pas, et tient la
                 liste de ce qui reste à construire. */}
             <Text className="px-1 text-[12px] leading-4 text-gray-400">
-              Consulter les comptes, les commandes et les litiges, ou
-              suspendre un compte, n'est pas encore possible : ces routes
-              n'existent pas côté serveur.
+              {t(
+                "Consulter les comptes, les commandes et les litiges, ou suspendre un compte, n'est pas encore possible : ces routes n'existent pas côté serveur.",
+                'Viewing accounts, orders, and disputes or suspending an account is not yet possible: these server routes do not exist.',
+              )}
             </Text>
           </>
         ) : null}
@@ -168,12 +171,16 @@ function PendingCard({
   count: number;
   onPress: () => void;
 }) {
+  const { t } = useAppLanguage();
   const waiting = count > 0;
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={`${count} dossier${count > 1 ? 's' : ''} ${label} en attente`}
+      accessibilityLabel={t(
+        `${count} dossier${count > 1 ? 's' : ''} ${label} en attente`,
+        `${count} pending ${label.toLowerCase()} application${count === 1 ? '' : 's'}`,
+      )}
       className="flex-1 gap-2 rounded-2xl bg-white p-4"
     >
       <View className="flex-row items-center gap-2">

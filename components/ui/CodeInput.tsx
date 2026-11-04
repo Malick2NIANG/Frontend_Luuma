@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
 import { colors } from '@/constants/colors';
+import { useAppLanguage } from '@/lib/appLanguage';
 
 export const CODE_LENGTH = 6;
 
@@ -30,6 +31,7 @@ export function CodeInput({
   error,
   editable = true,
 }: CodeInputProps) {
+  const { t } = useAppLanguage();
   const inputRef = useRef<TextInput>(null);
   const digits = value.padEnd(CODE_LENGTH).split('').slice(0, CODE_LENGTH);
   const focusedIndex = Math.min(value.length, CODE_LENGTH - 1);
@@ -46,7 +48,7 @@ export function CodeInput({
         onPress={() => inputRef.current?.focus()}
         className="flex-row justify-between"
         accessibilityRole="button"
-        accessibilityLabel="Saisir le code à 6 chiffres"
+        accessibilityLabel={t('Saisir le code à 6 chiffres', 'Enter the 6-digit code')}
       >
         {digits.map((digit, index) => {
           const filled = digit.trim().length > 0;

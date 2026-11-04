@@ -9,6 +9,7 @@ import {
   useExchangeRates,
   type DisplayCurrency,
 } from '@/hooks/useCurrency';
+import { useAppLanguage } from '@/lib/appLanguage';
 
 /**
  * Sélecteur de devise d'affichage.
@@ -18,6 +19,7 @@ import {
  * plus loin. Le choix est mémorisé et s'applique partout ensuite.
  */
 export function CurrencyPicker() {
+  const { language, t } = useAppLanguage();
   const currency = useCurrencyStore((s) => s.currency);
   const setCurrency = useCurrencyStore((s) => s.setCurrency);
   const { data, isError } = useExchangeRates();
@@ -39,7 +41,10 @@ export function CurrencyPicker() {
       <Pressable
         onPress={() => setOpen(true)}
         accessibilityRole="button"
-        accessibilityLabel={`Devise d'affichage : ${CURRENCY_LABELS[currency]}`}
+        accessibilityLabel={t(
+          `Devise d'affichage : ${CURRENCY_LABELS[currency]}`,
+          `Display currency: ${currencyLabel(currency)}`,
+        )}
         className="flex-row items-center gap-1 rounded-full bg-gray-100 px-3 py-1.5"
       >
         <Text className="text-[12px] font-semibold text-gray-800">
@@ -60,12 +65,12 @@ export function CurrencyPicker() {
           <View className="rounded-t-3xl bg-white pb-6">
             <View className="flex-row items-center border-b border-gray-100 px-4 py-3.5">
               <Text className="flex-1 text-[15px] font-bold text-gray-900">
-                Devise d'affichage
+                {t("Devise d'affichage", 'Display currency')}
               </Text>
               <Pressable
                 onPress={() => setOpen(false)}
                 hitSlop={10}
-                accessibilityLabel="Fermer"
+                accessibilityLabel={t('Fermer', 'Close')}
               >
                 <Ionicons name="close" size={22} color={colors.text} />
               </Pressable>
@@ -94,7 +99,7 @@ export function CurrencyPicker() {
                     {item}
                   </Text>
                   <Text className="flex-1 text-[13px] text-gray-700">
-                    {CURRENCY_LABELS[item]}
+                    {t(CURRENCY_LABELS[item], currencyLabel(item))}
                   </Text>
                   {selected ? (
                     <Ionicons name="checkmark" size={19} color={colors.primary} />
@@ -106,16 +111,24 @@ export function CurrencyPicker() {
             <View className="px-4 pt-3">
               {isError || !data ? (
                 <Text className="text-[11px] leading-4 text-gray-500">
-                  Les taux ne sont pas disponibles : seuls le franc CFA et
-                  l'euro peuvent être affichés. Leur parité est fixe, elle ne
-                  dépend d'aucun service extérieur.
+                  {t(
+                    "Les taux ne sont pas disponibles : seuls le franc CFA et l'euro peuvent être affichés. Leur parité est fixe, elle ne dépend d'aucun service extérieur.",
+                    'Exchange rates are unavailable: only the CFA franc and euro can be displayed. Their exchange rate is fixed and does not rely on an external service.',
+                  )}
                 </Text>
               ) : (
                 <Text className="text-[11px] leading-4 text-gray-500">
-                  Le franc CFA est arrimé à l'euro à un taux fixe. Les autres
-                  devises sont indicatives — la commande est facturée en euros.
+                  {t(
+                    "Le franc CFA est arrimé à l'euro à un taux fixe. Les autres devises sont indicatives — la commande est facturée en euros.",
+                    'The CFA franc is pegged to the euro at a fixed rate. Other currencies are indicative — orders are charged in euros.',
+                  )}
                   {data.quotedAt
-                    ? ` Taux du ${new Date(data.quotedAt).toLocaleDateString('fr-FR')}.`
+                    ? t(
+                        ` Taux du ${new Date(data.quotedAt).toLocaleDateString('fr-FR')}.`,
+                        ` Rate as of ${new Date(data.quotedAt).toLocaleDateString(
+                          language === 'fr' ? 'fr-FR' : 'en-US',
+                        )}.`,
+                      )
                     : ''}
                 </Text>
               )}
@@ -125,4 +138,15 @@ export function CurrencyPicker() {
       </Modal>
     </>
   );
+}
+
+function currencyLabel(currency: DisplayCurrency): string {
+  const labels: Record<DisplayCurrency, string> = {
+    XOF: 'CFA franc',
+    EUR: 'Euro',
+    USD: 'US dollar',
+    GBP: 'Pound sterling',
+    CAD: 'Canadian dollar',
+  };
+  return labels[currency];
 }

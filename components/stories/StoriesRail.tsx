@@ -6,6 +6,7 @@ import { RoleMark } from '@/components/ui/RoleMark';
 import { colors } from '@/constants/colors';
 import { useAuth } from '@/hooks/useAuth';
 import { useStoryFeed } from '@/hooks/useStories';
+import { useAppLanguage } from '@/lib/appLanguage';
 import type { StoryGroup } from '@/types/story.types';
 
 const RING_SIZE = 58;
@@ -21,6 +22,7 @@ const AVATAR_SIZE = 48;
  */
 export function StoriesRail() {
   const router = useRouter();
+  const { t } = useAppLanguage();
   const { isAuthenticated, user } = useAuth();
   const { data: groups } = useStoryFeed();
 
@@ -69,6 +71,8 @@ function MyStoryBubble({
   avatar: string | null;
   onPress: () => void;
 }) {
+  const { t } = useAppLanguage();
+
   return (
     <Pressable onPress={onPress} style={{ width: 62 }} className="items-center">
       <View
@@ -84,7 +88,7 @@ function MyStoryBubble({
         </View>
       </View>
       <Text numberOfLines={1} className="mt-1 text-[9.5px] text-gray-700">
-        Votre story
+        {t('Votre story', 'Your story')}
       </Text>
     </Pressable>
   );

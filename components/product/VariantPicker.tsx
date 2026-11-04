@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { colors } from '@/constants/colors';
+import { useAppLanguage } from '@/lib/appLanguage';
 import type { ProductVariant } from '@/hooks/useCatalog';
 import type { ProductSize } from '@/types/api.types';
 
@@ -25,7 +26,7 @@ const SIZE_LABELS: Record<ProductSize, string> = {
   XL: 'XL',
   XXL: '2XL',
   XXXL: '3XL',
-  ONE_SIZE: 'Unique',
+  ONE_SIZE: 'One size',
 };
 
 export interface VariantPickerProps {
@@ -47,6 +48,7 @@ export function VariantPicker({
   selected,
   onSelect,
 }: VariantPickerProps) {
+  const { t } = useAppLanguage();
   const colours = useMemo(() => {
     const seen = new Map<string, ProductVariant>();
     for (const variant of variants) {
@@ -84,7 +86,7 @@ export function VariantPicker({
       {colours.length > 0 && (
         <View>
           <Text className="mb-2 text-sm font-semibold text-gray-900">
-            Couleur{activeColour ? ` · ${activeColour}` : ''}
+            {t('Couleur', 'Color')}{activeColour ? ` · ${activeColour}` : ''}
           </Text>
           <View className="flex-row flex-wrap gap-2.5">
             {colours.map((colour) => {
@@ -126,7 +128,9 @@ export function VariantPicker({
 
       {sizes.length > 0 && (
         <View>
-          <Text className="mb-2 text-sm font-semibold text-gray-900">Taille</Text>
+          <Text className="mb-2 text-sm font-semibold text-gray-900">
+            {t('Taille', 'Size')}
+          </Text>
           <View className="flex-row flex-wrap gap-2">
             {sizes.map((size) => {
               const variant = findVariant(activeColour, size);
@@ -140,8 +144,14 @@ export function VariantPicker({
                   accessibilityRole="button"
                   accessibilityLabel={
                     soldOut
-                      ? `Taille ${SIZE_LABELS[size]}, épuisée`
-                      : `Taille ${SIZE_LABELS[size]}`
+                      ? t(
+                          `Taille ${SIZE_LABELS[size]}, épuisée`,
+                          `Size ${SIZE_LABELS[size]}, sold out`,
+                        )
+                      : t(
+                          `Taille ${SIZE_LABELS[size]}`,
+                          `Size ${SIZE_LABELS[size]}`,
+                        )
                   }
                   accessibilityState={{ selected: isActive, disabled: soldOut }}
                   onPress={() => variant && onSelect(variant)}
@@ -178,7 +188,10 @@ export function VariantPicker({
       {/* Un stock bas se dit : c'est ce qui décide d'acheter maintenant. */}
       {selected?.stock != null && selected.stock > 0 && selected.stock <= 3 && (
         <Text className="text-xs font-medium text-amber-700">
-          Plus que {selected.stock} en stock
+          {t(
+            `Plus que ${selected.stock} en stock`,
+            `Only ${selected.stock} left in stock`,
+          )}
         </Text>
       )}
     </View>

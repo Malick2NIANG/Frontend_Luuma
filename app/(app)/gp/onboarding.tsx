@@ -22,6 +22,7 @@ import {
   type GpPayoutMethod,
 } from '@/hooks/useProfessional';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
+import { useAppLanguage } from '@/lib/appLanguage';
 
 /**
  * Paliers de confiance, repris de `common/gp-capacity.ts`.
@@ -31,13 +32,14 @@ import { useRequireAuth } from '@/hooks/useRequireAuth';
  * qu'on demande aux clients — ils confient de l'argent à un inconnu.
  */
 const TRUST_TIERS = [
-  { trips: '0 à 2 voyages', weight: '5 kg' },
-  { trips: '3 à 4 voyages', weight: '10 kg' },
-  { trips: '5 à 9 voyages', weight: '20 kg' },
-  { trips: '10 voyages et plus', weight: '30 kg' },
+  { trips: '0 à 2 voyages', english: '0 to 2 trips', weight: '5 kg' },
+  { trips: '3 à 4 voyages', english: '3 to 4 trips', weight: '10 kg' },
+  { trips: '5 à 9 voyages', english: '5 to 9 trips', weight: '20 kg' },
+  { trips: '10 voyages et plus', english: '10+ trips', weight: '30 kg' },
 ];
 
 export default function GpOnboardingScreen() {
+  const { t } = useAppLanguage();
   const router = useRouter();
   const goBack = useGoBack('/(app)/(tabs)/profile');
   const { isReady } = useRequireAuth('/(app)/gp/onboarding');
@@ -58,9 +60,12 @@ export default function GpOnboardingScreen() {
     return (
       <Outcome
         icon="checkmark-circle"
-        title="Dossier déposé"
-        description="Nous vérifions votre pièce d'identité sous 48 heures. Vous pouvez déjà enregistrer vos trajets : ils seront visibles dès la validation."
-        actionLabel="Préparer mes trajets"
+        title={t('Dossier déposé', 'Application submitted')}
+        description={t(
+          "Nous vérifions votre pièce d'identité sous 48 heures. Vous pouvez déjà enregistrer vos trajets : ils seront visibles dès la validation.",
+          'We will verify your identity document within 48 hours. You can already create trips; they will be visible once approved.',
+        )}
+        actionLabel={t('Préparer mes trajets', 'Set up my trips')}
         onAction={() => router.replace('/(app)/(tabs)/profile')}
       />
     );
@@ -70,9 +75,9 @@ export default function GpOnboardingScreen() {
     return (
       <Outcome
         icon="airplane"
-        title="Vous êtes déjà GP"
-        description="Retrouvez votre espace depuis votre profil."
-        actionLabel="Aller au profil"
+        title={t('Vous êtes déjà GP', 'You are already a personal shopper')}
+        description={t('Retrouvez votre espace depuis votre profil.', 'Open your personal shopper area from your profile.')}
+        actionLabel={t('Aller au profil', 'Go to profile')}
         onAction={() => router.replace('/(app)/(tabs)/profile')}
       />
     );
@@ -82,9 +87,12 @@ export default function GpOnboardingScreen() {
     return (
       <Outcome
         icon="mail-outline"
-        title="Vérifiez d'abord votre email"
-        description="Transporter les achats d'inconnus engage votre responsabilité : nous devons pouvoir vous joindre."
-        actionLabel="Retour au profil"
+        title={t("Vérifiez d'abord votre email", 'Verify your email first')}
+        description={t(
+          'Transporter les achats d’inconnus engage votre responsabilité : nous devons pouvoir vous joindre.',
+          'Carrying purchases for others is a responsibility, so we need to be able to contact you.',
+        )}
+        actionLabel={t('Retour au profil', 'Back to profile')}
         onAction={() => router.replace('/(app)/(tabs)/profile')}
       />
     );
@@ -114,11 +122,11 @@ export default function GpOnboardingScreen() {
         <Pressable
           onPress={goBack}
           hitSlop={10}
-          accessibilityLabel="Retour"
+          accessibilityLabel={t('Retour', 'Back')}
         >
           <Ionicons name="arrow-back" size={22} color={colors.text} />
         </Pressable>
-        <Text className="text-lg font-bold text-gray-900">Devenir GP</Text>
+        <Text className="text-lg font-bold text-gray-900">{t('Devenir GP', 'Become a personal shopper')}</Text>
       </View>
 
       <KeyboardAvoidingView
@@ -130,24 +138,28 @@ export default function GpOnboardingScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <Text className="mb-5 text-[13px] leading-5 text-gray-600">
-            Vous voyagez entre le Sénégal et l'Europe ? Rentabilisez les kilos
-            libres de votre valise en transportant les achats de la diaspora.
+            {t(
+              "Vous voyagez entre le Sénégal et l'Europe ? Rentabilisez les kilos libres de votre valise en transportant les achats de la diaspora.",
+              'Travel between Senegal and Europe? Earn money from the unused space in your luggage by carrying purchases for the diaspora.',
+            )}
           </Text>
 
           <View className="mb-6 rounded-2xl border border-gray-100 p-4">
             <Text className="mb-2.5 text-sm font-semibold text-gray-900">
-              Combien pouvez-vous transporter ?
+              {t('Combien pouvez-vous transporter ?', 'How much can you carry?')}
             </Text>
             <Text className="mb-3 text-xs leading-4 text-gray-600">
-              La capacité augmente avec vos voyages honorés. Elle ne redescend
-              jamais.
+              {t(
+                'La capacité augmente avec vos voyages honorés. Elle ne redescend jamais.',
+                'Your capacity increases as you complete trips and never decreases.',
+              )}
             </Text>
             {TRUST_TIERS.map((tier) => (
               <View
                 key={tier.trips}
                 className="flex-row justify-between border-t border-gray-50 py-1.5"
               >
-                <Text className="text-xs text-gray-600">{tier.trips}</Text>
+                <Text className="text-xs text-gray-600">{t(tier.trips, tier.english)}</Text>
                 <Text className="text-xs font-semibold text-gray-900">
                   {tier.weight}
                 </Text>
@@ -158,7 +170,7 @@ export default function GpOnboardingScreen() {
           <IdDocumentField value={idDocument} onChange={setIdDocument} />
           {touched && !documentValid ? (
             <Text className="mt-2 text-xs text-red-600">
-              La pièce d'identité est obligatoire pour valider votre dossier.
+              {t("La pièce d'identité est obligatoire pour valider votre dossier.", 'An identity document is required to approve your application.')}
             </Text>
           ) : null}
 
@@ -172,7 +184,7 @@ export default function GpOnboardingScreen() {
             />
             {touched && !payoutValid ? (
               <Text className="mt-2 text-xs text-red-600">
-                Renseignez le compte qui recevra vos gains.
+                {t('Renseignez le compte qui recevra vos gains.', 'Enter the account where you would like to receive your earnings.')}
               </Text>
             ) : null}
           </View>
@@ -186,10 +198,10 @@ export default function GpOnboardingScreen() {
 
         <View className="border-t border-gray-100 px-4 pt-3">
           <Button fullWidth loading={createGp.isPending} onPress={handleSubmit}>
-            Déposer mon dossier
+            {t('Déposer mon dossier', 'Submit my application')}
           </Button>
           <Text className="mt-2 text-center text-[11px] text-gray-500">
-            Examen sous 48 h. Vous pourrez enregistrer vos trajets entre-temps.
+            {t('Examen sous 48 h. Vous pourrez enregistrer vos trajets entre-temps.', 'Review takes up to 48 hours. You can create trips in the meantime.')}
           </Text>
         </View>
       </KeyboardAvoidingView>

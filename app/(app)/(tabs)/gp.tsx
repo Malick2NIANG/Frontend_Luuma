@@ -5,13 +5,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { colors } from '@/constants/colors';
 import {
-  TRIP_STATUS_LABELS,
   useGpStats,
   useOwnTrips,
   type OwnTrip,
 } from '@/hooks/useGpSpace';
 import { useMe } from '@/hooks/useMe';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
+import { useAppLanguage } from '@/lib/appLanguage';
 import type { TripStatus } from '@/types/api.types';
 
 /** Le rouge reste réservé à ce qui a mal tourné. */
@@ -23,8 +23,8 @@ const STATUS_TONE: Record<TripStatus, { bg: string; text: string }> = {
   CANCELLED: { bg: 'bg-red-50', text: 'text-red-900' },
 };
 
-function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('fr-FR', {
+function formatDate(iso: string, language: 'fr' | 'en'): string {
+  return new Date(iso).toLocaleDateString(language === 'fr' ? 'fr-FR' : 'en-US', {
     day: 'numeric',
     month: 'long',
   });
@@ -40,8 +40,16 @@ function Stat({ value, label }: { value: string | number; label: string }) {
 }
 
 function TripCard({ trip }: { trip: OwnTrip }) {
+  const { language, t } = useAppLanguage();
   const router = useRouter();
   const tone = STATUS_TONE[trip.status];
+  const statusLabels: Record<TripStatus, string> = {
+    UPCOMING: t('À venir', 'Upcoming'),
+    COLLECTING: t('Collecte en cours', 'Collecting'),
+    IN_TRANSIT: t('En voyage', 'In transit'),
+    COMPLETED: t('Terminé', 'Completed'),
+    CANCELLED: t('Annulé', 'Cancelled'),
+  };
 
   // La valise remplie à 100 % n'accepte plus de colis : c'est l'information
   // qui décide si le GP doit relancer sa publication ou non.
@@ -56,7 +64,7 @@ function TripCard({ trip }: { trip: OwnTrip }) {
     >
       <View className={['flex-row items-center justify-between px-3 py-2', tone.bg].join(' ')}>
         <Text className={['text-[11.5px] font-bold', tone.text].join(' ')}>
-          {TRIP_STATUS_LABELS[trip.status]}
+          {statusLabels[trip.status]}
         </Text>
         <Text className={['text-[11px]', tone.text].join(' ')}>
           {trip.pricePerKg.toFixed(2)} € / kg
@@ -71,10 +79,10 @@ function TripCard({ trip }: { trip: OwnTrip }) {
           </Text>
         </View>
         <Text className="mt-0.5 text-[11px] text-gray-500">
-          Départ le {formatDate(trip.departureDate)}
+          {t('Départ le', 'Departure on')} {formatDate(trip.departureDate, language)}
           {trip.packageCount > 0
-            ? ` · ${trip.packageCount} colis`
-            : ' · aucun colis'}
+            ? t(` · ${trip.packageCount} colis`, ` · ${trip.packageCount} packages`)
+            : t(' · aucun colis', ' · no packages')}
         </Text>
 
         <View className="mt-3">
@@ -85,10 +93,13 @@ function TripCard({ trip }: { trip: OwnTrip }) {
             />
           </View>
           <Text className="mt-1 text-[10.5px] text-gray-500">
-            {trip.usedWeight.toFixed(1)} / {trip.maxWeight.toFixed(1)} kg utilisés
+            {trip.usedWeight.toFixed(1)} / {trip.maxWeight.toFixed(1)} kg {t('utilisés', 'used')}
             {isFull
-              ? ' · valise pleine'
-              : ` · ${trip.remainingWeight.toFixed(1)} kg disponibles`}
+              ? t(' · valise pleine', ' · suitcase full')
+              : t(
+                  ` · ${trip.remainingWeight.toFixed(1)} kg disponibles`,
+                  ` · ${trip.remainingWeight.toFixed(1)} kg available`,
+                )}
           </Text>
         </View>
       </View>
@@ -104,6 +115,7 @@ function TripCard({ trip }: { trip: OwnTrip }) {
  * rien ne bascule.
  */
 export default function GpSpaceScreen() {
+  const { t } = useAppLanguage();
   const router = useRouter();
   const { isReady } = useRequireAuth('/(app)/(tabs)/gp');
   const { me } = useMe();
@@ -118,9 +130,12 @@ export default function GpSpaceScreen() {
       <SafeAreaView className="flex-1 bg-white" edges={['top']}>
         <EmptyState
           icon="airplane-outline"
-          title="Vous n'êtes pas encore GP"
-          description="Déclarez vos voyages et rentabilisez les kilos que vous ne remplissez pas."
-          actionLabel="Devenir GP"
+          title={t("Vous n'êtes pas encore GP", "You're not a traveler yet")}
+          description={t(
+            'Déclarez vos voyages et rentabilisez les kilos que vous ne remplissez pas.',
+            'List your trips and earn money from the luggage capacity you have left.',
+          )}
+          actionLabel={t('Devenir GP', 'Become a traveler')}
           onAction={() => router.replace('/(app)/gp/onboarding')}
         />
       </SafeAreaView>
@@ -136,7 +151,7 @@ export default function GpSpaceScreen() {
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
       <View className="border-b border-gray-100 px-3.5 pb-2.5 pt-1">
-        <Text className="text-lg font-bold text-gray-900">Mes voyages</Text>
+        <Text className="text-lg font-bold text-gray-900">{t('Mes voyages', 'My trips')}</Text>
       </View>
 
       <ScrollView contentContainerClassName="pb-24">
@@ -144,9 +159,10 @@ export default function GpSpaceScreen() {
           <View className="mx-3.5 mt-3 flex-row gap-2.5 rounded-xl bg-amber-50 p-3">
             <Ionicons name="time-outline" size={18} color="#B45309" />
             <Text className="flex-1 text-[12px] leading-[17px] text-amber-900">
-              Votre profil GP est en cours de validation. Vous pouvez déjà
-              préparer un trajet : il ne sera proposé aux acheteurs qu'après
-              l'approbation.
+              {t(
+                "Votre profil GP est en cours de validation. Vous pouvez déjà préparer un trajet : il ne sera proposé aux acheteurs qu'après l'approbation.",
+                'Your traveler profile is being reviewed. You can already prepare a trip, but it will not be shown to shoppers until your profile is approved.',
+              )}
             </Text>
           </View>
         ) : null}
@@ -155,19 +171,21 @@ export default function GpSpaceScreen() {
           <View className="mx-3.5 mt-3 flex-row gap-2.5 rounded-xl bg-red-50 p-3">
             <Ionicons name="alert-circle-outline" size={18} color="#B91C1C" />
             <Text className="flex-1 text-[12px] leading-[17px] text-red-900">
-              Votre dossier a été refusé. Contactez le support pour connaître les
-              corrections attendues.
+              {t(
+                'Votre dossier a été refusé. Contactez le support pour connaître les corrections attendues.',
+                'Your application was rejected. Contact support to learn what needs to be corrected.',
+              )}
             </Text>
           </View>
         ) : null}
 
         <View className="flex-row border-b border-gray-100 px-3.5 py-4">
-          <Stat value={stats?.upcomingTrips ?? 0} label="À venir" />
-          <Stat value={stats?.toCollectCount ?? 0} label="À récupérer" />
-          <Stat value={stats?.completedTrips ?? 0} label="Voyages faits" />
+          <Stat value={stats?.upcomingTrips ?? 0} label={t('À venir', 'Upcoming')} />
+          <Stat value={stats?.toCollectCount ?? 0} label={t('À récupérer', 'To collect')} />
+          <Stat value={stats?.completedTrips ?? 0} label={t('Voyages faits', 'Completed trips')} />
           <Stat
             value={stats ? `${stats.maxWeightPerTrip} kg` : '—'}
-            label="Capacité"
+            label={t('Capacité', 'Capacity')}
           />
         </View>
 
@@ -175,8 +193,10 @@ export default function GpSpaceScreen() {
             que le GP prenne la limite pour une brimade arbitraire. */}
         {stats && stats.completedTrips < 5 ? (
           <Text className="px-3.5 pt-2.5 text-[10.5px] leading-4 text-gray-400">
-            Période d'essai : {stats.maxWeightPerTrip} kg par voyage jusqu'à 5
-            voyages validés. La limite augmente ensuite.
+            {t(
+              `Période d'essai : ${stats.maxWeightPerTrip} kg par voyage jusqu'à 5 voyages validés. La limite augmente ensuite.`,
+              `Trial period: ${stats.maxWeightPerTrip} kg per trip until you have completed 5 trips. The limit increases after that.`,
+            )}
           </Text>
         ) : null}
 
@@ -187,7 +207,7 @@ export default function GpSpaceScreen() {
           >
             <Ionicons name="cube-outline" size={15} color={colors.text} />
             <Text className="text-[12.5px] font-semibold text-gray-900">
-              Mes colis
+              {t('Mes colis', 'My packages')}
             </Text>
             {stats && stats.toCollectCount > 0 ? (
               <View className="ml-0.5 h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1">
@@ -204,7 +224,7 @@ export default function GpSpaceScreen() {
           >
             <Ionicons name="add" size={17} color={colors.white} />
             <Text className="text-[12.5px] font-semibold text-white">
-              Nouveau trajet
+              {t('Nouveau trajet', 'New trip')}
             </Text>
           </Pressable>
         </View>
@@ -216,17 +236,23 @@ export default function GpSpaceScreen() {
         ) : isError ? (
           <EmptyState
             icon="cloud-offline-outline"
-            title="Chargement impossible"
-            description="Vérifiez votre connexion puis réessayez."
-            actionLabel="Réessayer"
+            title={t('Chargement impossible', 'Unable to load')}
+            description={t(
+              'Vérifiez votre connexion puis réessayez.',
+              'Check your connection and try again.',
+            )}
+            actionLabel={t('Réessayer', 'Try again')}
             onAction={() => void refetch()}
           />
         ) : !trips || trips.length === 0 ? (
           <EmptyState
             icon="airplane-outline"
-            title="Aucun trajet"
-            description="Déclarez votre prochain voyage pour que les acheteurs puissent vous confier leurs colis."
-            actionLabel="Publier un trajet"
+            title={t('Aucun trajet', 'No trips yet')}
+            description={t(
+              'Déclarez votre prochain voyage pour que les acheteurs puissent vous confier leurs colis.',
+              'List your next trip so shoppers can entrust their packages to you.',
+            )}
+            actionLabel={t('Publier un trajet', 'List a trip')}
             onAction={() => router.push('/(app)/gp/trips/new')}
           />
         ) : (
@@ -234,7 +260,7 @@ export default function GpSpaceScreen() {
             {upcoming.length > 0 ? (
               <>
                 <Text className="mb-2 px-3.5 text-[11px] font-bold uppercase tracking-wide text-gray-400">
-                  À venir ({upcoming.length})
+                  {t(`À venir (${upcoming.length})`, `Upcoming (${upcoming.length})`)}
                 </Text>
                 {upcoming.map((trip) => (
                   <TripCard key={trip.id} trip={trip} />
@@ -245,7 +271,7 @@ export default function GpSpaceScreen() {
             {past.length > 0 ? (
               <>
                 <Text className="mb-2 mt-3 px-3.5 text-[11px] font-bold uppercase tracking-wide text-gray-400">
-                  Historique
+                  {t('Historique', 'Past trips')}
                 </Text>
                 {past.map((trip) => (
                   <TripCard key={trip.id} trip={trip} />

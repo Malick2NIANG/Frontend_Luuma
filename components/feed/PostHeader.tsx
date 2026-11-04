@@ -4,7 +4,7 @@ import { Pressable, Text, View } from 'react-native';
 import { Avatar } from '@/components/ui/Avatar';
 import { RoleMark } from '@/components/ui/RoleMark';
 import { useToggleFollow } from '@/hooks/useFollow';
-import { formatRelative } from '@/lib/format';
+import { useAppLanguage } from '@/lib/appLanguage';
 import type { FeedAuthor } from '@/types/feed.types';
 
 /**
@@ -23,6 +23,7 @@ export function PostHeader({
 }) {
   const router = useRouter();
   const { toggle } = useToggleFollow();
+  const { language, t } = useAppLanguage();
 
   const profilePath =
     author.type === 'merchant'
@@ -47,7 +48,7 @@ export function PostHeader({
         </View>
         <Text className="text-[11px] text-gray-500">
           {author.city ? `${author.city} · ` : ''}
-          {formatRelative(publishedAt)}
+          {formatPublishedAt(publishedAt, language, t)}
         </Text>
       </Pressable>
 
@@ -70,7 +71,9 @@ export function PostHeader({
             author.isFollowedByMe ? 'text-gray-500' : 'text-white',
           ].join(' ')}
         >
-          {author.isFollowedByMe ? 'Abonné' : "S'abonner"}
+          {author.isFollowedByMe
+            ? t('Abonné', 'Following')
+            : t("S'abonner", 'Follow')}
         </Text>
         {author.isFollowedByMe && (
           // La cloche rappelle que l'abonnement notifie les nouveautés —
@@ -80,4 +83,32 @@ export function PostHeader({
       </Pressable>
     </View>
   );
+}
+
+function formatPublishedAt(
+  iso: string,
+  language: 'fr' | 'en',
+  t: (french: string, english: string) => string,
+): string {
+  const date = new Date(iso);
+  const diffMinutes = Math.floor((Date.now() - date.getTime()) / 60_000);
+
+  if (diffMinutes < 1) return t("À l'instant", 'Just now');
+  if (diffMinutes < 60) {
+    return t(`Il y a ${diffMinutes} min`, `${diffMinutes} min ago`);
+  }
+
+  const diffHours = Math.floor(diffMinutes / 60);
+  if (diffHours < 24) return t(`Il y a ${diffHours} h`, `${diffHours} hr ago`);
+
+  const diffDays = Math.floor(diffHours / 24);
+  if (diffDays === 1) return t('Hier', 'Yesterday');
+  if (diffDays < 7) {
+    return t(`Il y a ${diffDays} jours`, `${diffDays} days ago`);
+  }
+
+  return date.toLocaleDateString(language === 'fr' ? 'fr-FR' : 'en-US', {
+    day: 'numeric',
+    month: 'short',
+  });
 }

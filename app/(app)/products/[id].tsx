@@ -24,6 +24,7 @@ import { useToggleFavorite } from '@/hooks/useFavorites';
 import { useAuthGate } from '@/hooks/useRequireAuth';
 import { formatWeight, formatXof } from '@/lib/format';
 import { isInCart, useCartStore } from '@/store/cart.store';
+import { useAppLanguage } from '@/lib/appLanguage';
 
 /**
  * Fiche produit.
@@ -37,6 +38,7 @@ import { isInCart, useCartStore } from '@/store/cart.store';
  * n'ait jamais à remonter pour agir.
  */
 export default function ProductDetailScreen() {
+  const { t } = useAppLanguage();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const goBack = useGoBack('/(app)/(tabs)');
@@ -70,16 +72,16 @@ export default function ProductDetailScreen() {
       <SafeAreaView className="flex-1 bg-white" edges={['top']}>
         <EmptyState
           icon="alert-circle-outline"
-          title="Produit introuvable"
-          description="Ce produit n'est plus disponible ou a été retiré."
-          actionLabel="Réessayer"
+          title={t('Produit introuvable', 'Product not found')}
+          description={t("Ce produit n'est plus disponible ou a été retiré.", 'This product is no longer available or has been removed.')}
+          actionLabel={t('Réessayer', 'Try again')}
           onAction={() => void refetch()}
         />
       </SafeAreaView>
     );
   }
 
-  const unit = product.unitLabel ?? 'unité';
+  const unit = product.unitLabel ?? t('unité', 'unit');
   const isByLength = product.kind === 'BY_LENGTH';
 
   /** Couleurs distinctes, en aperçu — le choix réel se fait dans la feuille. */
@@ -135,11 +137,11 @@ export default function ProductDetailScreen() {
           permettre avec un dégradé sombre en surimpression ; ici, une barre
           franche est plus sûre et plus lisible. */}
       <View className="flex-row items-center px-3 pb-2 pt-1">
-        <RoundButton icon="arrow-back" label="Retour" onPress={goBack} />
+        <RoundButton icon="arrow-back" label={t('Retour', 'Back')} onPress={goBack} />
         <View className="flex-1" />
         <RoundButton
           icon="share-outline"
-          label="Partager"
+          label={t('Partager', 'Share')}
           onPress={() => {
             void Share.share({
               message: `${product.name} — ${formatXof(product.price)} sur Luuma`,
@@ -150,7 +152,7 @@ export default function ProductDetailScreen() {
         <RoundButton
           icon={favorited ? 'heart' : 'heart-outline'}
           tint={favorited ? '#DC2626' : colors.text}
-          label={favorited ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+          label={favorited ? t('Retirer des favoris', 'Remove from favorites') : t('Ajouter aux favoris', 'Add to favorites')}
           onPress={() => {
             if (!requireAuth(`/(app)/products/${product.id}`)) return;
             toggleFavorite({ productId: product.id, isFavorited: favorited });
@@ -167,7 +169,18 @@ export default function ProductDetailScreen() {
 
           <View className="mt-1.5 flex-row items-center gap-1.5">
             <Text className="text-[12px] text-gray-500">
-              {CATEGORY_LABELS[product.category]}
+              {t(CATEGORY_LABELS[product.category], ({
+                VETEMENTS: 'Clothing',
+                CHAUSSURES: 'Shoes',
+                BIJOUX_ACCESSOIRES: 'Jewelry & accessories',
+                ALIMENTAIRE: 'Food',
+                COSMETIQUES: 'Cosmetics',
+                ARTISANAT_DECO: 'Crafts & decor',
+                ENFANT_BEBE: 'Kids & baby',
+                MAISON: 'Home',
+                LIVRES_CULTURE: 'Books & culture',
+                AUTRE: 'Other',
+              } as const)[product.category])}
             </Text>
             {product.subCategory ? (
               <>
@@ -204,9 +217,12 @@ export default function ProductDetailScreen() {
                 s'engager que sa banque le débitera en euros. */}
             {price.isIndicative ? (
               <Text className="mt-2.5 text-[11px] leading-4 text-gray-500">
-                Montant indicatif. Vous serez débité en euros.
+                {t('Montant indicatif. Vous serez débité en euros.', 'Indicative amount. You will be charged in euros.')}
                 {price.quotedAt
-                  ? ` Taux du ${new Date(price.quotedAt).toLocaleDateString('fr-FR')}.`
+                  ? t(
+                      ` Taux du ${new Date(price.quotedAt).toLocaleDateString('fr-FR')}.`,
+                      ` Rate as of ${new Date(price.quotedAt).toLocaleDateString('en-US')}.`,
+                    )
                   : ''}
               </Text>
             ) : null}
@@ -217,11 +233,13 @@ export default function ProductDetailScreen() {
             <Ionicons name="airplane-outline" size={17} color="#B45309" />
             <View className="flex-1">
               <Text className="text-[12px] font-semibold text-amber-900">
-                {formatWeight(product.weight)} {isByLength ? `le ${unit}` : "l'unité"}
+                {formatWeight(product.weight)} {isByLength ? `${t('le', 'per')} ${unit}` : t("l'unité", 'per item')}
               </Text>
               <Text className="mt-0.5 text-[11px] leading-4 text-amber-800">
-                Le poids détermine le coût du transport. Vous choisirez votre GP
-                après le panier.
+                {t(
+                  'Le poids détermine le coût du transport. Vous choisirez votre GP après le panier.',
+                  'Weight determines shipping costs. You will choose a personal shopper after adding the item to your cart.',
+                )}
               </Text>
             </View>
           </View>
@@ -240,7 +258,7 @@ export default function ProductDetailScreen() {
                 {product.merchant.city}
                 {product.merchant.totalReviews > 0
                   ? ` · ★ ${product.merchant.rating.toFixed(1)} (${product.merchant.totalReviews})`
-                  : ' · Nouvelle boutique'}
+                  : t(' · Nouvelle boutique', ' · New shop')}
               </Text>
             </View>
             <Pressable
@@ -251,10 +269,10 @@ export default function ProductDetailScreen() {
                 )
               }
               accessibilityRole="button"
-              accessibilityLabel="Écrire à la boutique"
+              accessibilityLabel={t('Écrire à la boutique', 'Message the shop')}
               className="rounded-lg border border-primary px-3 py-1.5"
             >
-              <Text className="text-[11px] font-bold text-primary">Message</Text>
+              <Text className="text-[11px] font-bold text-primary">{t('Message', 'Message')}</Text>
             </Pressable>
           </Pressable>
 
@@ -262,7 +280,7 @@ export default function ProductDetailScreen() {
           {product.description ? (
             <View className="mt-5">
               <Text className="mb-1.5 text-sm font-semibold text-gray-900">
-                Description
+                {t('Description', 'Description')}
               </Text>
               <ExpandableText
                 text={product.description}
@@ -276,8 +294,10 @@ export default function ProductDetailScreen() {
           {colours.length > 0 ? (
             <View className="mt-5">
               <Text className="mb-2 text-sm font-semibold text-gray-900">
-                {colours.length} couleur{colours.length > 1 ? 's' : ''} disponible
-                {colours.length > 1 ? 's' : ''}
+                {t(
+                  `${colours.length} couleur${colours.length > 1 ? 's' : ''} disponible${colours.length > 1 ? 's' : ''}`,
+                  `${colours.length} color${colours.length === 1 ? '' : 's'} available`,
+                )}
               </Text>
               <View className="flex-row flex-wrap gap-2">
                 {colours.map((variant) => (
@@ -301,11 +321,13 @@ export default function ProductDetailScreen() {
           {/* --- Avis --- */}
           <View className="mt-6 border-t border-gray-100 pt-5">
             <Text className="mb-1.5 text-sm font-semibold text-gray-900">
-              Avis
+              {t('Avis', 'Reviews')}
             </Text>
             <Text className="text-[12px] leading-5 text-gray-500">
-              Aucun avis pour l'instant. Les avis apparaîtront après les
-              premières livraisons confirmées.
+              {t(
+                "Aucun avis pour l'instant. Les avis apparaîtront après les premières livraisons confirmées.",
+                'No reviews yet. Reviews will appear here after the first confirmed deliveries.',
+              )}
             </Text>
           </View>
         </View>
@@ -333,7 +355,7 @@ export default function ProductDetailScreen() {
         >
           <Ionicons name="cart-outline" size={17} color={colors.white} />
           <Text className="text-sm font-bold text-white">
-            {inCart ? 'Ajouter encore' : 'Ajouter au panier'}
+            {inCart ? t('Ajouter encore', 'Add more') : t('Ajouter au panier', 'Add to cart')}
           </Text>
         </Pressable>
       </View>

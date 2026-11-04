@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Pressable, Text, View, type TextLayoutEventData } from 'react-native';
+import { useAppLanguage } from '@/lib/appLanguage';
 
 /**
  * Longueur au-delà de laquelle on suppose le texte tronqué.
@@ -35,6 +36,7 @@ export function ExpandableText({
   lines = 2,
   className = 'text-[13px] leading-5 text-gray-700',
 }: ExpandableTextProps) {
+  const { t } = useAppLanguage();
   const [expanded, setExpanded] = useState(false);
   const [measuredLines, setMeasuredLines] = useState<number | null>(null);
 
@@ -69,12 +71,14 @@ export function ExpandableText({
           hitSlop={6}
           accessibilityRole="button"
           accessibilityLabel={
-            expanded ? 'Réduire la description' : 'Afficher toute la description'
+            expanded
+              ? t('Réduire la description', 'Collapse description')
+              : t('Afficher toute la description', 'Show full description')
           }
           className="mt-0.5 self-start"
         >
           <Text className="text-[12px] font-semibold text-gray-500">
-            {expanded ? 'moins' : 'plus'}
+            {expanded ? t('moins', 'less') : t('plus', 'more')}
           </Text>
         </Pressable>
       ) : null}

@@ -15,6 +15,7 @@ import { ZoomableImage } from '@/components/media/ZoomableImage';
 import { VideoItem } from '@/components/media/VideoItem';
 import { colors } from '@/constants/colors';
 import { toMediaItems } from '@/lib/media';
+import { useAppLanguage } from '@/lib/appLanguage';
 
 export interface MediaViewerProps {
   visible: boolean;
@@ -38,6 +39,7 @@ export function MediaViewer({
   initialIndex = 0,
   onClose,
 }: MediaViewerProps) {
+  const { t } = useAppLanguage();
   const { width, height } = useWindowDimensions();
   const scrollRef = useRef<ScrollView>(null);
 
@@ -114,7 +116,7 @@ export function MediaViewer({
               onPress={onClose}
               hitSlop={12}
               accessibilityRole="button"
-              accessibilityLabel="Fermer"
+              accessibilityLabel={t('Fermer', 'Close')}
               className="h-9 w-9 items-center justify-center rounded-full bg-black/50"
             >
               <Ionicons name="close" size={22} color={colors.white} />
@@ -140,7 +142,10 @@ export function MediaViewer({
             pointerEvents="none"
           >
             <Text className="pb-4 text-center text-[11px] text-white/50">
-              Pincez ou touchez deux fois pour agrandir
+              {t(
+                'Pincez ou touchez deux fois pour agrandir',
+                'Pinch or double-tap to zoom',
+              )}
             </Text>
           </SafeAreaView>
         ) : null}

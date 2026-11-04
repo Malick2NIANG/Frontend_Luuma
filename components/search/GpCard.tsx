@@ -4,6 +4,7 @@ import { Avatar } from '@/components/ui/Avatar';
 import { RoleMark } from '@/components/ui/RoleMark';
 import { useOpenDirectChat } from '@/hooks/useDirectChat';
 import { formatWeight } from '@/lib/format';
+import { useAppLanguage } from '@/lib/appLanguage';
 import type { GpSummary } from '@/types/gp.types';
 
 /** Nombre de voyages en dessous duquel on parle de « nouveau GP ». */
@@ -19,6 +20,7 @@ const NEWCOMER_THRESHOLD = 3;
 export function GpCard({ gp }: { gp: GpSummary }) {
   const router = useRouter();
   const { open: openChat } = useOpenDirectChat();
+  const { t } = useAppLanguage();
 
   const profilePath = `/(app)/gps/${gp.id}`;
   const isNewcomer = gp.totalTrips < NEWCOMER_THRESHOLD;
@@ -49,11 +51,19 @@ export function GpCard({ gp }: { gp: GpSummary }) {
               // Sans historique, la note vaut zéro et afficherait « ★ 0,0 » —
               // pire qu'un mauvais avis. On annonce plutôt la capacité, qui
               // est l'information utile pour un débutant.
-              `Nouveau GP · ${formatWeight(gp.maxWeightPerTrip)} max`
+              t(
+                `Nouveau GP · ${formatWeight(gp.maxWeightPerTrip)} max`,
+                `New traveler · ${formatWeight(gp.maxWeightPerTrip)} max`,
+              )
             ) : (
-              `★ ${gp.rating.toFixed(1)} · ${gp.totalTrips} voyages`
+              t(
+                `★ ${gp.rating.toFixed(1)} · ${gp.totalTrips} voyages`,
+                `★ ${gp.rating.toFixed(1)} · ${gp.totalTrips} trips`,
+              )
             )}
-            {gp.followersCount > 0 ? ` · ${gp.followersCount} abonnés` : ''}
+            {gp.followersCount > 0
+              ? ` · ${gp.followersCount} ${t('abonnés', 'followers')}`
+              : ''}
           </Text>
 
           <View className="mt-1.5 flex-row flex-wrap gap-1.5">
@@ -75,13 +85,17 @@ export function GpCard({ gp }: { gp: GpSummary }) {
             onPress={() => router.push(profilePath)}
             className="rounded-lg bg-primary px-3 py-1.5"
           >
-            <Text className="text-[11px] font-bold text-white">Réserver</Text>
+            <Text className="text-[11px] font-bold text-white">
+              {t('Réserver', 'Book')}
+            </Text>
           </Pressable>
           <Pressable
             onPress={() => openChat(gp.user.id, '/(app)/(tabs)/search')}
             className="rounded-lg border border-primary bg-white px-3 py-1.5"
           >
-            <Text className="text-[11px] font-bold text-primary">Message</Text>
+            <Text className="text-[11px] font-bold text-primary">
+              {t('Message', 'Message')}
+            </Text>
           </Pressable>
         </View>
       </View>

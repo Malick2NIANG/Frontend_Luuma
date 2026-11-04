@@ -19,6 +19,28 @@ import {
   type SortOption,
 } from '@/hooks/useSearch';
 import type { ProductCategory } from '@/types/api.types';
+import { useAppLanguage } from '@/lib/appLanguage';
+
+const CATEGORY_LABELS_EN: Record<ProductCategory, string> = {
+  VETEMENTS: 'Clothing',
+  CHAUSSURES: 'Shoes',
+  BIJOUX_ACCESSOIRES: 'Jewelry',
+  ALIMENTAIRE: 'Food',
+  COSMETIQUES: 'Cosmetics',
+  ARTISANAT_DECO: 'Crafts',
+  ENFANT_BEBE: 'Kids',
+  MAISON: 'Home',
+  LIVRES_CULTURE: 'Books',
+  AUTRE: 'Other',
+};
+
+const SORT_LABELS_EN: Record<SortOption, string> = {
+  relevance: 'Relevance',
+  price_asc: 'Price ↑',
+  price_desc: 'Price ↓',
+  newest: 'Newest',
+  rating: 'Top rated',
+};
 
 /**
  * Villes proposées au filtre.
@@ -65,6 +87,7 @@ export function FilterSheet({
   onClose,
   onApply,
 }: FilterSheetProps) {
+  const { t } = useAppLanguage();
   const [draft, setDraft] = useState<SearchFilters>(filters);
 
   // Resynchronisation à l'ouverture : le brouillon d'une session précédente
@@ -88,13 +111,15 @@ export function FilterSheet({
 
         <View className="max-h-[88%] rounded-t-3xl bg-white">
           <View className="flex-row items-center border-b border-gray-100 px-4 py-3.5">
-            <Text className="text-[15px] font-bold text-gray-900">Filtrer</Text>
+            <Text className="text-[15px] font-bold text-gray-900">
+              {t('Filtrer', 'Filter')}
+            </Text>
             <Pressable
               className="ml-auto"
               onPress={() => setDraft({ ...EMPTY_FILTERS })}
             >
               <Text className="text-xs font-semibold text-primary">
-                Tout effacer
+                {t('Tout effacer', 'Clear all')}
               </Text>
             </Pressable>
             <Pressable className="ml-4" onPress={onClose} hitSlop={10}>
@@ -103,12 +128,15 @@ export function FilterSheet({
           </View>
 
           <ScrollView>
-            <Section title="Catégorie">
+            <Section title={t('Catégorie', 'Category')}>
               <View className="flex-row flex-wrap gap-1.5">
                 {PRODUCT_CATEGORIES.map((category: ProductCategory) => (
                   <Chip
                     key={category}
-                    label={CATEGORY_SHORT_LABELS[category]}
+                    label={t(
+                      CATEGORY_SHORT_LABELS[category],
+                      CATEGORY_LABELS_EN[category],
+                    )}
                     active={draft.category === category}
                     onPress={() => toggle('category', category)}
                   />
@@ -116,28 +144,33 @@ export function FilterSheet({
               </View>
             </Section>
 
-            <Section title="Prix (FCFA)">
+            <Section title={t('Prix (FCFA)', 'Price (CFA francs)')}>
               <View className="flex-row items-center gap-2.5">
                 <NumberField
                   value={draft.minPrice}
-                  placeholder="Minimum"
+                  placeholder={t('Minimum', 'Minimum')}
                   onChange={(value) => patch({ minPrice: value })}
                 />
                 <Text className="text-gray-400">—</Text>
                 <NumberField
                   value={draft.maxPrice}
-                  placeholder="Maximum"
+                  placeholder={t('Maximum', 'Maximum')}
                   onChange={(value) => patch({ maxPrice: value })}
                 />
               </View>
             </Section>
 
-            <Section title="Poids — il détermine le prix du transport">
+            <Section
+              title={t(
+                'Poids — il détermine le prix du transport',
+                'Weight — it determines the shipping cost',
+              )}
+            >
               <View className="flex-row flex-wrap gap-1.5">
                 {WEIGHT_BUCKETS.map((bucket) => (
                   <Chip
                     key={bucket.label}
-                    label={bucket.label}
+                    label={t(bucket.label, bucket.value === undefined ? 'Any' : bucket.label)}
                     active={draft.maxWeight === bucket.value}
                     onPress={() => patch({ maxWeight: bucket.value })}
                   />
@@ -145,7 +178,7 @@ export function FilterSheet({
               </View>
             </Section>
 
-            <Section title="Ville du commerçant">
+            <Section title={t('Ville du commerçant', 'Merchant city')}>
               <View className="flex-row flex-wrap gap-1.5">
                 {CITIES.map((city) => (
                   <Chip
@@ -158,12 +191,17 @@ export function FilterSheet({
               </View>
             </Section>
 
-            <Section title="Note du vendeur">
+            <Section title={t('Note du vendeur', 'Seller rating')}>
               <View className="flex-row flex-wrap gap-1.5">
                 {RATINGS.map((rating) => (
                   <Chip
                     key={rating.label}
-                    label={`★ ${rating.label}`}
+                    label={`★ ${t(
+                      rating.label,
+                      rating.value === undefined
+                        ? 'All'
+                        : `${rating.value}+`,
+                    )}`}
                     active={draft.minRating === rating.value}
                     onPress={() => patch({ minRating: rating.value })}
                   />
@@ -171,12 +209,12 @@ export function FilterSheet({
               </View>
             </Section>
 
-            <Section title="Trier par" last>
+            <Section title={t('Trier par', 'Sort by')} last>
               <View className="flex-row flex-wrap gap-1.5">
                 {SORT_OPTIONS.map((option: SortOption) => (
                   <Chip
                     key={option}
-                    label={SORT_LABELS[option]}
+                    label={t(SORT_LABELS[option], SORT_LABELS_EN[option])}
                     active={draft.sort === option}
                     onPress={() => patch({ sort: option })}
                   />
@@ -195,8 +233,11 @@ export function FilterSheet({
             >
               <Text className="text-sm font-bold text-white">
                 {resultCount === undefined
-                  ? 'Voir les résultats'
-                  : `Voir ${resultCount} résultat${resultCount > 1 ? 's' : ''}`}
+                  ? t('Voir les résultats', 'View results')
+                  : t(
+                      `Voir ${resultCount} résultat${resultCount > 1 ? 's' : ''}`,
+                      `View ${resultCount} result${resultCount === 1 ? '' : 's'}`,
+                    )}
               </Text>
             </Pressable>
           </View>

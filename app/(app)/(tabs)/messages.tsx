@@ -10,10 +10,11 @@ import { ConversationSkeleton } from '@/components/ui/Skeleton';
 import { colors } from '@/constants/colors';
 import { useAuth } from '@/hooks/useAuth';
 import { useConversations } from '@/hooks/useDirectChat';
-import { formatRelative } from '@/lib/format';
+import { useAppLanguage } from '@/lib/appLanguage';
 import type { Conversation } from '@/types/chat.types';
 
 export default function MessagesScreen() {
+  const { t } = useAppLanguage();
   const router = useRouter();
   const { isAuthenticated, isHydrated } = useAuth();
   const { data, isLoading, isError, refetch, isRefetching } = useConversations();
@@ -31,8 +32,11 @@ export default function MessagesScreen() {
       <SafeAreaView className="flex-1 bg-white" edges={['top']}>
         <AuthPrompt
           icon="chatbubbles-outline"
-          title="Parlez à vos vendeurs et à vos GP"
-          description="Créez un compte pour poser vos questions avant de commander et suivre vos colis."
+          title={t('Parlez à vos vendeurs et à vos GP', 'Talk to your sellers and travelers')}
+          description={t(
+            'Créez un compte pour poser vos questions avant de commander et suivre vos colis.',
+            'Create an account to ask questions before ordering and track your packages.',
+          )}
           returnTo="/(app)/(tabs)/messages"
         />
       </SafeAreaView>
@@ -42,7 +46,7 @@ export default function MessagesScreen() {
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
       <View className="flex-row items-center border-b border-gray-100 px-4 pb-2.5 pt-1">
-        <Text className="text-lg font-bold text-gray-900">Messages</Text>
+        <Text className="text-lg font-bold text-gray-900">{t('Messages', 'Messages')}</Text>
       </View>
 
       {isLoading ? (
@@ -54,16 +58,19 @@ export default function MessagesScreen() {
       ) : isError ? (
         <EmptyState
           icon="cloud-offline-outline"
-          title="Connexion impossible"
-          actionLabel="Réessayer"
+          title={t('Connexion impossible', 'Unable to connect')}
+          actionLabel={t('Réessayer', 'Try again')}
           onAction={() => void refetch()}
         />
       ) : (data?.length ?? 0) === 0 ? (
         <EmptyState
           icon="chatbubbles-outline"
-          title="Aucune conversation"
-          description="Écrivez à un GP depuis son profil, ou à une boutique depuis une publication."
-          actionLabel="Trouver un GP"
+          title={t('Aucune conversation', 'No conversations')}
+          description={t(
+            'Écrivez à un GP depuis son profil, ou à une boutique depuis une publication.',
+            'Message a traveler from their profile, or a shop from one of its posts.',
+          )}
+          actionLabel={t('Trouver un GP', 'Find a traveler')}
           onAction={() => router.push('/(app)/(tabs)/search')}
         />
       ) : (
@@ -75,8 +82,10 @@ export default function MessagesScreen() {
           ListFooterComponent={
             <View className="mx-3 my-3 rounded-md border-l-[3px] border-amber-400 bg-amber-50 px-3 py-2.5">
               <Text className="text-[11px] leading-4 text-amber-900">
-                Les conversations liées à une commande réunissent client,
-                commerçants et GP au même endroit.
+                {t(
+                  'Les conversations liées à une commande réunissent client, commerçants et GP au même endroit.',
+                  'Order conversations bring customers, sellers, and travelers together in one place.',
+                )}
               </Text>
             </View>
           }
@@ -99,6 +108,7 @@ function ConversationRow({
   conversation: Conversation;
   onPress: () => void;
 }) {
+  const { language, t } = useAppLanguage();
   const isOrder = conversation.kind === 'ORDER';
   const preview = conversation.lastMessage;
 
@@ -135,7 +145,7 @@ function ConversationRow({
             <RoleMark type={conversation.counterpartRole} size={10} />
           )}
           <Text className="ml-auto text-[10px] text-gray-400">
-            {formatRelative(conversation.updatedAt)}
+            {formatConversationTime(conversation.updatedAt, language, t)}
           </Text>
         </View>
 
@@ -150,7 +160,7 @@ function ConversationRow({
         >
           {preview
             ? `${preview.isMine ? 'Vous : ' : ''}${preview.preview}`
-            : 'Aucun message'}
+            : t('Aucun message', 'No messages')}
         </Text>
       </View>
 
@@ -159,4 +169,29 @@ function ConversationRow({
       )}
     </Pressable>
   );
+}
+
+function formatConversationTime(
+  iso: string,
+  language: 'fr' | 'en',
+  t: (french: string, english: string) => string,
+): string {
+  const date = new Date(iso);
+  const diffMs = Date.now() - date.getTime();
+  const diffMin = Math.floor(diffMs / 60000);
+
+  if (diffMin < 1) return t("À l'instant", 'Just now');
+  if (diffMin < 60) return t(`Il y a ${diffMin} min`, `${diffMin} min ago`);
+
+  const diffH = Math.floor(diffMin / 60);
+  if (diffH < 24) return t(`Il y a ${diffH} h`, `${diffH} hr ago`);
+
+  const diffDays = Math.floor(diffH / 24);
+  if (diffDays === 1) return t('Hier', 'Yesterday');
+  if (diffDays < 7) return t(`Il y a ${diffDays} jours`, `${diffDays} days ago`);
+
+  return date.toLocaleDateString(language === 'fr' ? 'fr-FR' : 'en-US', {
+    day: 'numeric',
+    month: 'short',
+  });
 }

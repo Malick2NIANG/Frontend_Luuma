@@ -13,6 +13,9 @@ import { MediaViewer } from '@/components/media/MediaViewer';
 import { colors } from '@/constants/colors';
 import { useContentWidth } from '@/hooks/useContentWidth';
 import { toMediaItems } from '@/lib/media';
+import { useAppLanguage } from '@/lib/appLanguage';
+
+const MAX_MEDIA_WIDTH = 960;
 
 export interface MediaCarouselProps {
   /** Photos et vidéos mélangées, dans l'ordre choisi par le commerçant. */
@@ -46,8 +49,9 @@ export function MediaCarousel({
   horizontalInset = 0,
   openOnPress = false,
 }: MediaCarouselProps) {
+  const { t } = useAppLanguage();
   const contentWidth = useContentWidth();
-  const width = contentWidth - horizontalInset;
+  const width = Math.min(contentWidth, MAX_MEDIA_WIDTH) - horizontalInset;
   const height = width / aspectRatio;
 
   const [index, setIndex] = useState(0);
@@ -60,7 +64,10 @@ export function MediaCarousel({
     return (
       <View
         style={{ width, height: height * 0.6 }}
-        className={['items-center justify-center bg-gray-100', rounded].join(' ')}
+        className={[
+          'self-center items-center justify-center bg-gray-100',
+          rounded,
+        ].join(' ')}
       >
         <Ionicons name="image-outline" size={36} color="#9CA3AF" />
       </View>
@@ -73,7 +80,10 @@ export function MediaCarousel({
   };
 
   return (
-    <View style={{ width, height }} className={['overflow-hidden', rounded].join(' ')}>
+    <View
+      style={{ width, height, alignSelf: 'center' }}
+      className={['overflow-hidden', rounded].join(' ')}
+    >
       <ScrollView
         horizontal
         pagingEnabled
@@ -96,8 +106,8 @@ export function MediaCarousel({
             accessibilityLabel={
               openOnPress
                 ? item.kind === 'video'
-                  ? 'Lire la vidéo en plein écran'
-                  : 'Agrandir la photo'
+                  ? t('Lire la vidéo en plein écran', 'Play video in full screen')
+                  : t('Agrandir la photo', 'Enlarge photo')
                 : undefined
             }
             style={{ width, height }}
@@ -112,7 +122,7 @@ export function MediaCarousel({
                   <Ionicons name="play" size={30} color={colors.white} />
                 </View>
                 <Text className="mt-2.5 text-[11px] text-white/70">
-                  Vidéo · touchez pour lire
+                  {t('Vidéo · touchez pour lire', 'Video · tap to play')}
                 </Text>
               </View>
             ) : (

@@ -12,6 +12,7 @@ import {
   useSendVerificationCode,
   useVerifyEmail,
 } from '@/hooks/useEmailVerification';
+import { useAppLanguage } from '@/lib/appLanguage';
 
 /**
  * Vérification de l'adresse email, bloquante, à la première ouverture.
@@ -28,6 +29,7 @@ import {
  * ne renvoie qu'à la demande.
  */
 export function EmailVerificationGate() {
+  const { t } = useAppLanguage();
   const { user } = useAuth();
   const send = useSendVerificationCode();
   const verify = useVerifyEmail();
@@ -69,10 +71,11 @@ export function EmailVerificationGate() {
               <Ionicons name="mail-outline" size={26} color={colors.primary} />
             </View>
             <Text className="text-center text-[22px] font-bold text-gray-900">
-              Vérifiez votre adresse
+              {t('Vérifiez votre adresse', 'Verify your email address')}
             </Text>
             <Text className="text-center text-[13.5px] leading-5 text-gray-500">
-              Nous avons envoyé un code à 6 chiffres à{'\n'}
+              {t('Nous avons envoyé un code à 6 chiffres à', 'We sent a 6-digit code to')}
+              {'\n'}
               <Text className="font-semibold text-gray-700">{user?.email}</Text>
             </Text>
           </View>
@@ -91,7 +94,7 @@ export function EmailVerificationGate() {
               loading={verify.isPending}
               fullWidth
             >
-              Vérifier
+              {t('Vérifier', 'Verify')}
             </Button>
 
             <Pressable
@@ -99,7 +102,7 @@ export function EmailVerificationGate() {
               disabled={cooldown > 0 || send.isPending}
               hitSlop={8}
               accessibilityRole="button"
-              accessibilityLabel="Renvoyer le code"
+              accessibilityLabel={t('Renvoyer le code', 'Resend code')}
               className="self-center py-1"
             >
               <Text
@@ -109,15 +112,20 @@ export function EmailVerificationGate() {
                 ].join(' ')}
               >
                 {cooldown > 0
-                  ? `Renvoyer le code dans ${cooldown} s`
-                  : 'Renvoyer le code'}
+                  ? t(
+                      `Renvoyer le code dans ${cooldown} s`,
+                      `Resend code in ${cooldown}s`,
+                    )
+                  : t('Renvoyer le code', 'Resend code')}
               </Text>
             </Pressable>
           </View>
 
           <Text className="text-center text-[11px] leading-4 text-gray-400">
-            Le code est valable {CODE_EXPIRY_MINUTES} minutes. Pensez à
-            regarder vos indésirables.
+            {t(
+              `Le code est valable ${CODE_EXPIRY_MINUTES} minutes. Pensez à regarder vos indésirables.`,
+              `The code is valid for ${CODE_EXPIRY_MINUTES} minutes. Check your spam folder too.`,
+            )}
           </Text>
 
           {/* Porte de sortie. Une adresse mal saisie ne se corrige pas depuis
@@ -129,11 +137,14 @@ export function EmailVerificationGate() {
             disabled={logout.isPending}
             hitSlop={8}
             accessibilityRole="button"
-            accessibilityLabel="Se déconnecter"
+            accessibilityLabel={t('Se déconnecter', 'Log out')}
             className="self-center"
           >
             <Text className="text-[12px] text-gray-500">
-              Ce n'est pas la bonne adresse ? Se déconnecter
+              {t(
+                "Ce n'est pas la bonne adresse ? Se déconnecter",
+                'Wrong email address? Log out',
+              )}
             </Text>
           </Pressable>
         </View>

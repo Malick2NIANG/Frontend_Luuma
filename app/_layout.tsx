@@ -2,12 +2,13 @@ import '@/global.css';
 import '@/lib/socket';
 import '@/lib/netinfo';
 import { useEffect, useState } from 'react';
-import { View } from 'react-native';
+import { Platform, View } from 'react-native';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { Stack } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { WelcomeScreen } from '@/components/WelcomeScreen';
 import { MAX_CONTENT_WIDTH } from '@/hooks/useContentWidth';
+import { AppLanguageProvider } from '@/lib/appLanguage';
 import { queryClient } from '@/lib/queryClient';
 import { useAuthStore } from '@/store/auth.store';
 
@@ -15,7 +16,7 @@ import { useAuthStore } from '@/store/auth.store';
  * Plancher court pour laisser l'animation de marque se poser sans ralentir
  * inutilement les lancements où la session est déjà disponible.
  */
-const MINIMUM_SPLASH_MS = 900;
+const MINIMUM_SPLASH_MS = 1500;
 
 export default function RootLayout() {
   const isHydrated = useAuthStore((state) => state.isHydrated);
@@ -35,12 +36,13 @@ export default function RootLayout() {
   // La navigation est montée derrière l'écran de bienvenue. Attendre sa
   // première mise en page évite de révéler un écran encore en transition.
   return (
-    <QueryClientProvider client={queryClient}>
-      <SafeAreaProvider>
-        {/* Colonne centrée à largeur de téléphone. Sur mobile la contrainte
-            ne change rien (l'écran est plus étroit que le plafond) ; sur le
-            navigateur de développement, elle donne enfin à voir la mise en
-            page réelle au lieu d'une version étirée.
+    <AppLanguageProvider>
+      <QueryClientProvider client={queryClient}>
+        <SafeAreaProvider>
+        {/* Utilise la largeur disponible sur mobile, tablette et ordinateur,
+            avec un plafond pour éviter des lignes démesurées sur les écrans
+            ultra-larges. Les pages qui contiennent des médias ou des
+            formulaires appliquent leurs propres limites de confort.
 
             Fond unifié, sans gris : l'application suit le modèle Instagram,
             où le fil et les publications partagent la même surface et où
@@ -62,14 +64,19 @@ export default function RootLayout() {
             {splashVisible ? (
               <View className="absolute inset-0">
                 <WelcomeScreen
-                  ready={isHydrated && minimumElapsed && navigationLaidOut}
+                  ready={
+                    isHydrated &&
+                    minimumElapsed &&
+                    (navigationLaidOut || Platform.OS === 'web')
+                  }
                   onDismissed={() => setSplashVisible(false)}
                 />
               </View>
             ) : null}
           </View>
         </View>
-      </SafeAreaProvider>
-    </QueryClientProvider>
+        </SafeAreaProvider>
+      </QueryClientProvider>
+    </AppLanguageProvider>
   );
 }

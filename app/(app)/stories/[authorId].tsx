@@ -11,6 +11,7 @@ import { formatRelative } from '@/lib/format';
 import { useGoBack } from '@/hooks/useGoBack';
 import { useMarkStorySeen, useStoryFeed } from '@/hooks/useStories';
 import type { Story } from '@/types/story.types';
+import { useAppLanguage } from '@/lib/appLanguage';
 
 /** Durée d'affichage d'une story, en millisecondes. */
 const STORY_DURATION = 5000;
@@ -25,6 +26,7 @@ const TICK = 50;
  * qu'insérer un temps de chargement entre l'appui et l'image.
  */
 export default function StoryViewerScreen() {
+  const { t } = useAppLanguage();
   const { authorId } = useLocalSearchParams<{ authorId: string }>();
   const router = useRouter();
 
@@ -98,9 +100,12 @@ export default function StoryViewerScreen() {
       <SafeAreaView className="flex-1 bg-black">
         <EmptyState
           icon="time-outline"
-          title="Story expirée"
-          description="Elle n'est plus disponible : les stories disparaissent au bout de 24 heures."
-          actionLabel="Retour"
+          title={t('Story expirée', 'Story expired')}
+          description={t(
+            "Elle n'est plus disponible : les stories disparaissent au bout de 24 heures.",
+            'This story is no longer available. Stories disappear after 24 hours.',
+          )}
+          actionLabel={t('Retour', 'Back')}
           onAction={close}
         />
       </SafeAreaView>
@@ -198,12 +203,12 @@ export default function StoryViewerScreen() {
             sans ce lien, elle ne serait qu'une image de plus. */}
         {current.productId ? (
           <StoryLink
-            label="Voir le produit"
+            label={t('Voir le produit', 'View product')}
             onPress={() => router.push(`/(app)/products/${current.productId}`)}
           />
         ) : current.tripId ? (
           <StoryLink
-            label="Voir le trajet"
+            label={t('Voir le trajet', 'View trip')}
             onPress={() => router.push(`/(app)/trips/${current.tripId}`)}
           />
         ) : null}

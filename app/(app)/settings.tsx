@@ -12,6 +12,7 @@ import { useLogout } from '@/hooks/useAuth';
 import { useSetMarketingConsent } from '@/hooks/useLegal';
 import { useMe } from '@/hooks/useMe';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
+import { useAppLanguage } from '@/lib/appLanguage';
 
 /**
  * Réglages.
@@ -29,6 +30,7 @@ export default function SettingsScreen() {
   const { isReady } = useRequireAuth('/(app)/settings');
   const { me } = useMe();
   const setMarketingConsent = useSetMarketingConsent();
+  const { t } = useAppLanguage();
 
   const [notifyOrders, setNotifyOrders] = useState(true);
   const [notifyMessages, setNotifyMessages] = useState(true);
@@ -42,24 +44,24 @@ export default function SettingsScreen() {
       <View className="flex-row items-center gap-3 border-b border-gray-100 px-3.5 pb-2.5 pt-1">
         <Pressable onPress={goBack}
           accessibilityRole="button"
-          accessibilityLabel="Retour" hitSlop={10}>
+          accessibilityLabel={t('Retour', 'Back')} hitSlop={10}>
           <Ionicons name="arrow-back" size={22} color={colors.text} />
         </Pressable>
-        <Text className="text-lg font-bold text-gray-900">Réglages</Text>
+        <Text className="text-lg font-bold text-gray-900">{t('Réglages', 'Settings')}</Text>
       </View>
 
       <ScrollView contentContainerClassName="pb-10">
-        <SettingsGroup label="Compte" />
+        <SettingsGroup label={t('Compte', 'Account')} />
         <SettingsRow
           icon="person-outline"
-          title="Informations personnelles"
-          subtitle="Nom, téléphone, photo"
+          title={t('Informations personnelles', 'Personal information')}
+          subtitle={t('Nom, téléphone, photo', 'Name, phone, photo')}
           disabled
         />
         <SettingsRow
           icon="location-outline"
-          title="Adresses de livraison"
-          subtitle="Bientôt disponible"
+          title={t('Adresses de livraison', 'Delivery addresses')}
+          subtitle={t('Bientôt disponible', 'Coming soon')}
           disabled
         />
         {/* Lit `me.emailVerified` (serveur), pas `user.emailVerified` (magasin
@@ -73,30 +75,30 @@ export default function SettingsScreen() {
         {me && !me.emailVerified ? (
           <SettingsRow
             icon="mail-outline"
-            title="Vérifier mon email"
-            subtitle="Nécessaire pour payer une commande"
+            title={t('Vérifier mon email', 'Verify my email')}
+            subtitle={t('Nécessaire pour payer une commande', 'Required to pay for an order')}
             disabled
           />
         ) : null}
 
-        <SettingsGroup label="Sécurité" />
+        <SettingsGroup label={t('Sécurité', 'Security')} />
         <SettingsRow
           icon="key-outline"
-          title="Changer mon mot de passe"
+          title={t('Changer mon mot de passe', 'Change my password')}
           disabled
         />
         <SettingsRow
           icon="phone-portrait-outline"
-          title="Appareils connectés"
-          subtitle="Bientôt disponible"
+          title={t('Appareils connectés', 'Connected devices')}
+          subtitle={t('Bientôt disponible', 'Coming soon')}
           disabled
         />
 
-        <SettingsGroup label="Notifications" />
+        <SettingsGroup label={t('Notifications', 'Notifications')} />
         <SettingsRow
           icon="cube-outline"
-          title="Suivi de mes commandes"
-          subtitle="Colis remis, en transit, livré"
+          title={t('Suivi de mes commandes', 'Order tracking')}
+          subtitle={t('Colis remis, en transit, livré', 'Package handed over, in transit, delivered')}
           value={notifyOrders}
           onValueChange={setNotifyOrders}
         />
@@ -108,67 +110,72 @@ export default function SettingsScreen() {
         />
         <SettingsRow
           icon="airplane-outline"
-          title="Nouveaux trajets des GP suivis"
-          subtitle="Quand un GP part vers votre ville"
+          title={t('Nouveaux trajets des GP suivis', 'New trips from followed personal shoppers')}
+          subtitle={t('Quand un GP part vers votre ville', 'When a personal shopper travels to your city')}
           value={notifyTrips}
           onValueChange={setNotifyTrips}
         />
         <SettingsRow
           icon="storefront-outline"
-          title="Publications des boutiques suivies"
+          title={t('Publications des boutiques suivies', 'Posts from followed shops')}
           value={notifyShops}
           onValueChange={setNotifyShops}
         />
         <Text className="px-3.5 pt-2 text-[10px] text-gray-400">
-          Ces préférences ne sont pas encore enregistrées : l'envoi des
-          notifications reste à mettre en place.
+          {t(
+            "Ces préférences ne sont pas encore enregistrées : l'envoi des notifications reste à mettre en place.",
+            'These preferences are not saved yet: notifications are still being set up.',
+          )}
         </Text>
 
         {/* Séparé des interrupteurs ci-dessus, qui sont de simples préférences
             d'affichage : celui-ci est un consentement, il est réellement
             enregistré, et son retrait doit être aussi immédiat que l'accord. */}
-        <SettingsGroup label="Communications commerciales" />
+        <SettingsGroup label={t('Communications commerciales', 'Marketing communications')} />
         <SettingsRow
           icon="megaphone-outline"
-          title="Offres et nouveautés Luuma"
+          title={t('Offres et nouveautés Luuma', 'Luuma offers and news')}
           subtitle={
             me?.legal.marketingConsent
-              ? 'Vous recevez nos communications'
-              : 'Vous ne recevez aucune communication commerciale'
+              ? t('Vous recevez nos communications', 'You receive our updates')
+              : t('Vous ne recevez aucune communication commerciale', 'You do not receive marketing communications')
           }
           value={me?.legal.marketingConsent ?? false}
           onValueChange={(next) => setMarketingConsent.mutate(next)}
           disabled={!me}
         />
 
-        <SettingsGroup label="Préférences" />
+        <SettingsGroup label={t('Préférences', 'Preferences')} />
         <SettingsRow
           icon="globe-outline"
-          title="Langue"
-          subtitle="Français"
+          title={t('Langue', 'Language')}
+          subtitle={t('Français', 'English')}
           disabled
         />
         <SettingsRow
           icon="cash-outline"
-          title="Devise affichée"
-          subtitle="FCFA et EUR"
+          title={t('Devise affichée', 'Displayed currency')}
+          subtitle={t('FCFA et EUR', 'XOF and EUR')}
           disabled
         />
 
-        <SettingsGroup label="À propos" />
+        <SettingsGroup label={t('À propos', 'About')} />
         <SettingsRow
           icon="document-text-outline"
-          title="Conditions générales"
+          title={t('Conditions générales', 'Terms and conditions')}
           subtitle={
             me?.legal.acceptedAt
-              ? `Acceptées le ${new Date(me.legal.acceptedAt).toLocaleDateString('fr-FR')}`
+              ? t(
+                  `Acceptées le ${new Date(me.legal.acceptedAt).toLocaleDateString('fr-FR')}`,
+                  `Accepted on ${new Date(me.legal.acceptedAt).toLocaleDateString('en-US')}`,
+                )
               : undefined
           }
           onPress={() => router.push('/legal/terms')}
         />
         <SettingsRow
           icon="lock-closed-outline"
-          title="Politique de confidentialité"
+          title={t('Politique de confidentialité', 'Privacy policy')}
           onPress={() => router.push('/legal/privacy')}
         />
 
@@ -185,7 +192,7 @@ export default function SettingsScreen() {
             loading={logout.isPending}
             onPress={() => logout.mutate()}
           >
-            Se déconnecter
+            {t('Se déconnecter', 'Log out')}
           </Button>
         </View>
       </ScrollView>

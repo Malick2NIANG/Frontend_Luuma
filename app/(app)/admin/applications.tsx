@@ -26,6 +26,7 @@ import {
 import { useAdminAccessState } from '@/hooks/useAdminAccess';
 import { useGoBack } from '@/hooks/useGoBack';
 import { useMe } from '@/hooks/useMe';
+import { useAppLanguage } from '@/lib/appLanguage';
 
 /**
  * Instruction des dossiers : commerçants et GP en attente de validation.
@@ -35,6 +36,7 @@ import { useMe } from '@/hooks/useMe';
  * n'est pas ouvert, plutôt que d'afficher une suite de 403.
  */
 export default function AdminApplicationsScreen() {
+  const { t } = useAppLanguage();
   const { can, isLoading: meLoading } = useMe();
   const access = useAdminAccessState(can.administrate);
   const goBack = useGoBack('/(app)/admin');
@@ -65,18 +67,18 @@ export default function AdminApplicationsScreen() {
           onPress={goBack}
           hitSlop={12}
           accessibilityRole="button"
-          accessibilityLabel="Revenir au tableau de bord"
+          accessibilityLabel={t('Revenir au tableau de bord', 'Back to dashboard')}
         >
           <Ionicons name="arrow-back" size={24} color="#1A1A1A" />
         </Pressable>
         <Text className="text-base font-bold text-gray-900">
-          Dossiers en attente
+          {t('Dossiers en attente', 'Pending applications')}
         </Text>
       </View>
 
       <View className="flex-row gap-2 bg-white px-4 pb-3">
         <Tab
-          label="Commerçants"
+          label={t('Commerçants', 'Shops')}
           active={kind === 'merchant'}
           onPress={() => setKind('merchant')}
         />
@@ -88,13 +90,13 @@ export default function AdminApplicationsScreen() {
           <ActivityIndicator color={colors.primary} />
         ) : list.isError ? (
           <Text className="text-center text-sm text-red-500">
-            Impossible de charger les dossiers.
+            {t('Impossible de charger les dossiers.', 'Unable to load applications.')}
           </Text>
         ) : items.length === 0 ? (
           <View className="items-center gap-2 py-16">
             <Ionicons name="checkmark-done" size={32} color="#9CA3AF" />
             <Text className="text-center text-[13.5px] text-gray-400">
-              Aucun dossier en attente.
+              {t('Aucun dossier en attente.', 'No pending applications.')}
             </Text>
           </View>
         ) : (
@@ -145,6 +147,7 @@ function ApplicationCard({
   kind: ApplicationKind;
   item: PendingMerchant | PendingGp;
 }) {
+  const { t } = useAppLanguage();
   const approve = useApproveApplication(kind);
   const reject = useRejectApplication(kind);
   const kyc = useKycDocument(kind);
@@ -185,7 +188,9 @@ function ApplicationCard({
             : `${item.user.email}`}
         </Text>
         <Text className="text-[11.5px] text-gray-400">
-          Déposé le {new Date(item.createdAt).toLocaleDateString('fr-FR')}
+          {t('Déposé le', 'Submitted on')} {new Date(item.createdAt).toLocaleDateString(
+            t('fr-FR', 'en-US'),
+          )}
         </Text>
       </View>
 
@@ -197,17 +202,17 @@ function ApplicationCard({
 
       <View className="gap-1.5 rounded-xl bg-gray-50 p-3">
         <Detail label="Email" value={item.user.email} />
-        <Detail label="Téléphone" value={item.user.phone ?? 'Non renseigné'} />
+        <Detail label={t('Téléphone', 'Phone')} value={item.user.phone ?? t('Non renseigné', 'Not provided')} />
         {merchant ? (
           <>
-            <Detail label="Adresse" value={merchant.address} />
-            <Detail label="Produits déjà saisis" value={String(merchant._count.products)} />
+            <Detail label={t('Adresse', 'Address')} value={merchant.address} />
+            <Detail label={t('Produits déjà saisis', 'Products listed')} value={String(merchant._count.products)} />
           </>
         ) : gp ? (
           <>
-            <Detail label="Voyages effectués" value={String(gp.totalTrips)} />
+            <Detail label={t('Voyages effectués', 'Trips completed')} value={String(gp.totalTrips)} />
             <Detail
-              label="Capacité par trajet"
+              label={t('Capacité par trajet', 'Capacity per trip')}
               value={`${gp.maxWeightPerTrip} kg`}
             />
           </>
@@ -220,7 +225,7 @@ function ApplicationCard({
       {item.rejectionNote ? (
         <View className="gap-1 rounded-xl bg-amber-50 p-3">
           <Text className="text-[11px] font-semibold uppercase text-amber-700">
-            Rejeté précédemment
+            {t('Rejeté précédemment', 'Previously rejected')}
           </Text>
           <Text className="text-[12.5px] leading-4 text-amber-900">
             {item.rejectionNote}
@@ -232,7 +237,7 @@ function ApplicationCard({
         onPress={openDocument}
         disabled={!item.idDocumentUrl || kyc.isPending}
         accessibilityRole="button"
-        accessibilityLabel="Consulter la pièce d'identité"
+        accessibilityLabel={t("Consulter la pièce d'identité", 'View identity document')}
         className={[
           'flex-row items-center justify-center gap-2 rounded-xl border py-2.5',
           item.idDocumentUrl ? 'border-gray-200' : 'border-gray-100',
@@ -250,8 +255,8 @@ function ApplicationCard({
           ].join(' ')}
         >
           {item.idDocumentUrl
-            ? "Voir la pièce d'identité"
-            : "Aucune pièce d'identité fournie"}
+            ? t("Voir la pièce d'identité", 'View identity document')
+            : t("Aucune pièce d'identité fournie", 'No identity document provided')}
         </Text>
       </Pressable>
 
@@ -277,13 +282,18 @@ function ApplicationCard({
             ) : null}
           </View>
           <Text className="flex-1 text-[12.5px] leading-4 text-gray-600">
-            J'ai consulté la pièce d'identité et elle correspond au postulant.
+            {t(
+              "J'ai consulté la pièce d'identité et elle correspond au postulant.",
+              'I have reviewed the identity document and it matches the applicant.',
+            )}
           </Text>
         </Pressable>
       ) : (
         <Text className="text-[12px] leading-4 text-amber-700">
-          Sans pièce d'identité, l'approbation reste possible mais l'identité
-          ne sera pas marquée comme vérifiée.
+          {t(
+            "Sans pièce d'identité, l'approbation reste possible mais l'identité ne sera pas marquée comme vérifiée.",
+            'Approval is still possible without an identity document, but the identity will not be marked as verified.',
+          )}
         </Text>
       )}
 
@@ -295,11 +305,11 @@ function ApplicationCard({
         <Pressable
           onPress={() => setRejecting(true)}
           accessibilityRole="button"
-          accessibilityLabel="Rejeter le dossier"
+          accessibilityLabel={t('Rejeter le dossier', 'Reject application')}
           className="flex-1 items-center rounded-xl border border-red-200 py-3"
         >
           <Text className="text-[13.5px] font-semibold text-red-600">
-            Rejeter
+            {t('Rejeter', 'Reject')}
           </Text>
         </Pressable>
         <View className="flex-1">
@@ -331,21 +341,23 @@ function ApplicationCard({
         <View className="flex-1 justify-end bg-black/40">
           <View className="gap-4 rounded-t-3xl bg-white p-5 pb-8">
             <Text className="text-[17px] font-bold text-gray-900">
-              Motif du rejet
+              {t('Motif du rejet', 'Reason for rejection')}
             </Text>
             {/* Obligatoire côté serveur, et c'est la bonne règle : un dossier
                 refusé sans explication laisse quelqu'un sans recours et sans
                 savoir quoi corriger pour repostuler. */}
             <Text className="text-[12.5px] leading-4 text-gray-500">
-              Ce texte sera lu par le postulant. Dites-lui ce qu'il doit
-              corriger pour représenter son dossier.
+              {t(
+                "Ce texte sera lu par le postulant. Dites-lui ce qu'il doit corriger pour représenter son dossier.",
+                'The applicant will read this message. Explain what they need to correct before resubmitting.',
+              )}
             </Text>
             <TextInput
               value={note}
               onChangeText={setNote}
               multiline
               numberOfLines={4}
-              placeholder="Pièce d'identité illisible, adresse incomplète…"
+              placeholder={t("Pièce d'identité illisible, adresse incomplète…", 'Unreadable identity document, incomplete address…')}
               placeholderTextColor="#9CA3AF"
               style={{ textAlignVertical: 'top' }}
               className="min-h-24 rounded-xl bg-gray-50 p-3 text-[14px] text-gray-900"
@@ -357,7 +369,7 @@ function ApplicationCard({
                 className="flex-1 items-center rounded-xl border border-gray-200 py-3"
               >
                 <Text className="text-[13.5px] font-semibold text-gray-600">
-                  Annuler
+                  {t('Annuler', 'Cancel')}
                 </Text>
               </Pressable>
               <View className="flex-1">
@@ -377,7 +389,7 @@ function ApplicationCard({
                   loading={reject.isPending}
                   fullWidth
                 >
-                  Confirmer le rejet
+                  {t('Confirmer le rejet', 'Confirm rejection')}
                 </Button>
               </View>
             </View>

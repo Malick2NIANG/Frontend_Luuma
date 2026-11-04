@@ -11,12 +11,19 @@ import { useGoBack } from '@/hooks/useGoBack';
 import { useToggleProductAvailability } from '@/hooks/useMerchantSpace';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
 import { PRODUCT_CATEGORY_LABELS } from '@/types/api.types';
+import { useAppLanguage } from '@/lib/appLanguage';
 
 const KIND_LABELS: Record<string, string> = {
   SIMPLE: 'Article simple',
   VARIANT: 'Plusieurs tailles ou couleurs',
   MADE_TO_ORDER: 'Sur-mesure',
   BY_LENGTH: 'Vendu au mètre',
+};
+const KIND_LABELS_EN: Record<string, string> = {
+  SIMPLE: 'Single item',
+  VARIANT: 'Multiple sizes or colors',
+  MADE_TO_ORDER: 'Made to order',
+  BY_LENGTH: 'Sold by length',
 };
 
 function Row({ label, value }: { label: string; value: string }) {
@@ -37,6 +44,7 @@ function Row({ label, value }: { label: string; value: string }) {
  * déclinaisons et de leur stock.
  */
 export default function MerchantProductScreen() {
+  const { t } = useAppLanguage();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const goBack = useGoBack('/(app)/(tabs)/shop');
@@ -52,14 +60,19 @@ export default function MerchantProductScreen() {
     const goingOffline = product.isAvailable;
 
     Alert.alert(
-      goingOffline ? 'Retirer de la vente ?' : 'Remettre en vente ?',
       goingOffline
-        ? "Le produit disparaîtra du fil et de la recherche. Les commandes déjà passées ne sont pas affectées."
-        : 'Le produit redeviendra visible des acheteurs.',
+        ? t('Retirer de la vente ?', 'Remove from sale?')
+        : t('Remettre en vente ?', 'Put back on sale?'),
+      goingOffline
+        ? t(
+            'Le produit disparaîtra du fil et de la recherche. Les commandes déjà passées ne sont pas affectées.',
+            'The product will disappear from the feed and search. Existing orders will not be affected.',
+          )
+        : t('Le produit redeviendra visible des acheteurs.', 'The product will be visible to buyers again.'),
       [
-        { text: 'Annuler', style: 'cancel' },
+        { text: t('Annuler', 'Cancel'), style: 'cancel' },
         {
-          text: goingOffline ? 'Retirer' : 'Remettre',
+          text: goingOffline ? t('Retirer', 'Remove') : t('Remettre', 'Put back'),
           style: goingOffline ? 'destructive' : 'default',
           onPress: () =>
             toggle.mutate({
@@ -78,18 +91,18 @@ export default function MerchantProductScreen() {
           onPress={goBack}
           hitSlop={10}
           accessibilityRole="button"
-          accessibilityLabel="Retour"
+          accessibilityLabel={t('Retour', 'Back')}
         >
           <Ionicons name="arrow-back" size={22} color={colors.text} />
         </Pressable>
         <Text numberOfLines={1} className="flex-1 text-lg font-bold text-gray-900">
-          {product?.name ?? 'Produit'}
+          {product?.name ?? t('Produit', 'Product')}
         </Text>
         <Pressable
           onPress={() => router.push(`/(app)/products/${id}`)}
           hitSlop={10}
           accessibilityRole="button"
-          accessibilityLabel="Voir la fiche telle que la voient les acheteurs"
+          accessibilityLabel={t('Voir la fiche telle que la voient les acheteurs', 'View the product page as buyers see it')}
         >
           <Ionicons name="eye-outline" size={21} color={colors.text} />
         </Pressable>
@@ -100,9 +113,9 @@ export default function MerchantProductScreen() {
       ) : isError || !product ? (
         <EmptyState
           icon="cloud-offline-outline"
-          title="Produit introuvable"
-          description="Vérifiez votre connexion puis réessayez."
-          actionLabel="Réessayer"
+          title={t('Produit introuvable', 'Product not found')}
+          description={t('Vérifiez votre connexion puis réessayez.', 'Check your connection and try again.')}
+          actionLabel={t('Réessayer', 'Try again')}
           onAction={() => void refetch()}
         />
       ) : (
@@ -125,7 +138,7 @@ export default function MerchantProductScreen() {
                     product.isAvailable ? 'text-primary' : 'text-gray-500',
                   ].join(' ')}
                 >
-                  {product.isAvailable ? 'En vente' : 'Retiré'}
+                  {product.isAvailable ? t('En vente', 'On sale') : t('Retiré', 'Not listed')}
                 </Text>
               </View>
               <Text className="text-[11px] text-gray-400">
@@ -145,33 +158,33 @@ export default function MerchantProductScreen() {
 
             <View className="mt-5">
               <Row
-                label="Prix"
-                value={`${product.price.toLocaleString('fr-FR')} FCFA`}
+                label={t('Prix', 'Price')}
+                value={`${product.price.toLocaleString(t('fr-FR', 'en-US'))} FCFA`}
               />
-              <Row label="Poids de référence" value={`${product.weight} kg`} />
+              <Row label={t('Poids de référence', 'Reference weight')} value={`${product.weight} kg`} />
               <Row
-                label="Catégorie"
+                label={t(PRODUCT_CATEGORY_LABELS[product.category], product.category)}
                 value={PRODUCT_CATEGORY_LABELS[product.category]}
               />
               <Row
-                label="Mode de vente"
-                value={KIND_LABELS[product.kind] ?? product.kind}
+                label={t('Mode de vente', 'Selling method')}
+                value={t(KIND_LABELS[product.kind] ?? product.kind, KIND_LABELS_EN[product.kind] ?? product.kind)}
               />
               {product.productionDays ? (
                 <Row
-                  label="Délai de confection"
-                  value={`${product.productionDays} jours`}
+                  label={t('Délai de confection', 'Production time')}
+                  value={t(`${product.productionDays} jours`, `${product.productionDays} days`)}
                 />
               ) : null}
               {product.unitLabel ? (
-                <Row label="Unité" value={product.unitLabel} />
+                <Row label={t('Unité', 'Unit')} value={product.unitLabel} />
               ) : null}
             </View>
 
             {product.variants && product.variants.length > 0 ? (
               <>
                 <Text className="mb-2 mt-6 text-[11px] font-bold uppercase tracking-wide text-gray-400">
-                  Déclinaisons
+                  {t('Déclinaisons', 'Variants')}
                 </Text>
                 {product.variants.map((variant) => (
                   <View
@@ -188,7 +201,7 @@ export default function MerchantProductScreen() {
                       <Text className="text-[12.5px] text-gray-900">
                         {[variant.sizeLabel ?? variant.size, variant.colorName]
                           .filter(Boolean)
-                          .join(' · ') || 'Sans libellé'}
+                          .join(' · ') || t('Sans libellé', 'No label')}
                       </Text>
                     </View>
                     <Text className="text-[12px] text-gray-500">
@@ -205,8 +218,8 @@ export default function MerchantProductScreen() {
                       ].join(' ')}
                     >
                       {variant.stock === null || variant.stock === undefined
-                        ? 'non suivi'
-                        : `${variant.stock} en stock`}
+                        ? t('non suivi', 'not tracked')
+                        : t(`${variant.stock} en stock`, `${variant.stock} in stock`)}
                     </Text>
                   </View>
                 ))}
@@ -240,7 +253,7 @@ export default function MerchantProductScreen() {
                   product.isAvailable ? 'text-red-600' : 'text-gray-900',
                 ].join(' ')}
               >
-                {product.isAvailable ? 'Retirer de la vente' : 'Remettre en vente'}
+                {product.isAvailable ? t('Retirer de la vente', 'Remove from sale') : t('Remettre en vente', 'Put back on sale')}
               </Text>
             </Pressable>
           </View>

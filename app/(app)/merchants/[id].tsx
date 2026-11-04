@@ -15,6 +15,7 @@ import { useMerchant } from '@/hooks/useCatalog';
 import { useOpenDirectChat } from '@/hooks/useDirectChat';
 import { useToggleFollow } from '@/hooks/useFollow';
 import { formatDate, formatXof } from '@/lib/format';
+import { useAppLanguage } from '@/lib/appLanguage';
 
 type Tab = 'products' | 'reviews' | 'about';
 
@@ -31,6 +32,7 @@ const GRID_GAP = 2;
  * trois articles.
  */
 export default function MerchantScreen() {
+  const { t } = useAppLanguage();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const goBack = useGoBack('/(app)/(tabs)/search');
@@ -53,12 +55,12 @@ export default function MerchantScreen() {
   if (isError || !merchant) {
     return (
       <SafeAreaView className="flex-1 bg-white" edges={['top']}>
-        <Header title="Boutique" onBack={goBack} />
+        <Header title={t('Boutique', 'Shop')} onBack={goBack} />
         <EmptyState
           icon="storefront-outline"
-          title="Boutique introuvable"
-          description="Cette boutique n'existe plus ou n'est pas encore validée."
-          actionLabel="Réessayer"
+          title={t('Boutique introuvable', 'Shop not found')}
+          description={t("Cette boutique n'existe plus ou n'est pas encore validée.", 'This shop no longer exists or has not been approved yet.')}
+          actionLabel={t('Réessayer', 'Try again')}
           onAction={() => void refetch()}
         />
       </SafeAreaView>
@@ -76,7 +78,10 @@ export default function MerchantScreen() {
           // `Share` est natif à React Native : aucune dépendance, et l'échec
           // est absorbé — sur le navigateur de développement, il n'existe pas.
           void Share.share({
-            message: `${merchant.shopName} sur Luuma — ${merchant.city}, ${merchant.country}`,
+            message: t(
+              `${merchant.shopName} sur Luuma — ${merchant.city}, ${merchant.country}`,
+              `${merchant.shopName} on Luuma — ${merchant.city}, ${merchant.country}`,
+            ),
           }).catch(() => undefined);
         }}
       />
@@ -118,8 +123,8 @@ export default function MerchantScreen() {
           </View>
 
           <View className="mt-3.5 flex-row justify-center gap-9">
-            <Stat value={String(products.length)} label="produits" />
-            <Stat value={String(merchant.followersCount)} label="abonnés" />
+            <Stat value={String(products.length)} label={t('produits', 'products')} />
+            <Stat value={String(merchant.followersCount)} label={t('abonnés', 'followers')} />
             <Stat
               // Une note de 0 sur 0 avis ne veut rien dire : afficher « 0,0 »
               // punirait une boutique neuve pour n'avoir pas encore vendu —
@@ -131,8 +136,8 @@ export default function MerchantScreen() {
               }
               label={
                 merchant.totalReviews > 0
-                  ? `★ ${merchant.totalReviews} avis`
-                  : 'aucun avis'
+                  ? t(`★ ${merchant.totalReviews} avis`, `★ ${merchant.totalReviews} reviews`)
+                  : t('aucun avis', 'no reviews')
               }
             />
           </View>
@@ -173,7 +178,7 @@ export default function MerchantScreen() {
                   merchant.isFollowedByMe ? 'text-gray-600' : 'text-white',
                 ].join(' ')}
               >
-                {merchant.isFollowedByMe ? 'Abonné' : "S'abonner"}
+                {merchant.isFollowedByMe ? t('Abonné', 'Following') : t("S'abonner", 'Follow')}
               </Text>
               <Ionicons
                 name="notifications"
@@ -189,7 +194,7 @@ export default function MerchantScreen() {
               accessibilityRole="button"
               className="flex-1 items-center rounded-lg border border-primary bg-white py-2.5"
             >
-              <Text className="text-[13px] font-bold text-primary">Message</Text>
+              <Text className="text-[13px] font-bold text-primary">{t('Message', 'Message')}</Text>
             </Pressable>
           </View>
         </View>
@@ -197,19 +202,19 @@ export default function MerchantScreen() {
         <View className="flex-row border-b border-gray-100">
           <TabButton
             icon="grid-outline"
-            label="Produits"
+            label={t('Produits', 'Products')}
             active={tab === 'products'}
             onPress={() => setTab('products')}
           />
           <TabButton
             icon="star-outline"
-            label="Avis"
+            label={t('Avis', 'Reviews')}
             active={tab === 'reviews'}
             onPress={() => setTab('reviews')}
           />
           <TabButton
             icon="information-circle-outline"
-            label="Infos"
+            label={t('Infos', 'About')}
             active={tab === 'about'}
             onPress={() => setTab('about')}
           />
@@ -219,8 +224,8 @@ export default function MerchantScreen() {
           products.length === 0 ? (
             <EmptyState
               icon="cube-outline"
-              title="Aucun produit"
-              description="Cette boutique n'a rien mis en ligne pour l'instant."
+              title={t('Aucun produit', 'No products yet')}
+              description={t("Cette boutique n'a rien mis en ligne pour l'instant.", 'This shop has not listed anything yet.')}
             />
           ) : (
             // Largeur en POURCENTAGE et non en points calculés : mesurer la
@@ -272,30 +277,30 @@ export default function MerchantScreen() {
         ) : tab === 'reviews' ? (
           <EmptyState
             icon="star-outline"
-            title="Aucun avis"
-            description="Les avis apparaîtront ici après les premières livraisons."
+            title={t('Aucun avis', 'No reviews yet')}
+            description={t('Les avis apparaîtront ici après les premières livraisons.', 'Reviews will appear here after the first deliveries.')}
           />
         ) : (
           <View className="px-4 pt-4">
             <AboutRow
               icon="location-outline"
-              label="Adresse"
+              label={t('Adresse', 'Address')}
               value={`${merchant.city}, ${merchant.country}`}
             />
             <AboutRow
               icon="calendar-outline"
-              label="Sur Luuma depuis"
+              label={t('Sur Luuma depuis', 'On Luuma since')}
               value={formatDate(merchant.createdAt)}
             />
             <AboutRow
               icon="person-outline"
-              label="Responsable"
+              label={t('Responsable', 'Owner')}
               value={merchant.user.name}
             />
             {merchant.description ? (
               <AboutRow
                 icon="document-text-outline"
-                label="À propos"
+                label={t('À propos', 'About')}
                 value={merchant.description}
               />
             ) : null}
@@ -322,13 +327,14 @@ function Header({
   onBack: () => void;
   onShare?: () => void;
 }) {
+  const { t } = useAppLanguage();
   return (
     <View className="flex-row items-center border-b border-gray-100 px-3.5 pb-2.5 pt-1">
       <Pressable
         onPress={onBack}
         hitSlop={10}
         accessibilityRole="button"
-        accessibilityLabel="Retour"
+        accessibilityLabel={t('Retour', 'Back')}
       >
         <Ionicons name="arrow-back" size={22} color={colors.text} />
       </Pressable>
@@ -345,7 +351,7 @@ function Header({
           onPress={onShare}
           hitSlop={10}
           accessibilityRole="button"
-          accessibilityLabel="Partager cette boutique"
+          accessibilityLabel={t('Partager cette boutique', 'Share this shop')}
         >
           <Ionicons name="ellipsis-horizontal" size={20} color={colors.text} />
         </Pressable>

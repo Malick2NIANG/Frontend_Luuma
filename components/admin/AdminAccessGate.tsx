@@ -8,6 +8,7 @@ import {
   useRequestAdminCode,
   useVerifyAdminCode,
 } from '@/hooks/useAdminAccess';
+import { useAppLanguage } from '@/lib/appLanguage';
 
 /**
  * Demande du code d'accès à l'administration.
@@ -30,6 +31,7 @@ export function AdminAccessGate({
   codePending?: boolean;
   resendInSeconds?: number;
 }) {
+  const { t } = useAppLanguage();
   const request = useRequestAdminCode();
   const verify = useVerifyAdminCode();
 
@@ -63,7 +65,7 @@ export function AdminAccessGate({
         onPress={onCancel}
         hitSlop={12}
         accessibilityRole="button"
-        accessibilityLabel="Revenir en arrière"
+        accessibilityLabel={t('Revenir en arrière', 'Go back')}
         className="py-4"
       >
         <Ionicons name="arrow-back" size={24} color="#1A1A1A" />
@@ -75,13 +77,14 @@ export function AdminAccessGate({
             <Ionicons name="shield-checkmark" size={26} color={colors.primary} />
           </View>
           <Text className="text-center text-[22px] font-bold text-gray-900">
-            Espace d'administration
+            {t("Espace d'administration", 'Administration')}
           </Text>
           <Text className="text-center text-[13.5px] leading-5 text-gray-500">
             {sent ? (
               request.data?.sentTo ? (
                 <>
-                  Saisissez le code envoyé à{'\n'}
+                  {t('Saisissez le code envoyé à', 'Enter the code sent to')}
+                  {'\n'}
                   <Text className="font-semibold text-gray-700">
                     {request.data.sentTo}
                   </Text>
@@ -89,10 +92,16 @@ export function AdminAccessGate({
               ) : (
                 // Code encore valide d'une visite précédente : on ne connaît
                 // pas l'adresse masquée, elle n'est renvoyée qu'à l'envoi.
-                "Saisissez le code reçu par email."
+                t(
+                  'Saisissez le code reçu par email.',
+                  'Enter the code you received by email.',
+                )
               )
             ) : (
-              "Votre mot de passe ne suffit pas ici. Nous allons envoyer un code à l'adresse de votre compte."
+              t(
+                "Votre mot de passe ne suffit pas ici. Nous allons envoyer un code à l'adresse de votre compte.",
+                "Your password alone is not enough here. We’ll send a code to your account email address.",
+              )
             )}
           </Text>
         </View>
@@ -117,7 +126,7 @@ export function AdminAccessGate({
                 loading={verify.isPending}
                 fullWidth
               >
-                Entrer
+                {t('Entrer', 'Submit')}
               </Button>
 
               <Pressable
@@ -125,7 +134,7 @@ export function AdminAccessGate({
                 disabled={cooldown > 0 || request.isPending}
                 hitSlop={8}
                 accessibilityRole="button"
-                accessibilityLabel="Renvoyer le code"
+                accessibilityLabel={t('Renvoyer le code', 'Resend code')}
                 className="self-center py-1"
               >
                 <Text
@@ -135,21 +144,26 @@ export function AdminAccessGate({
                   ].join(' ')}
                 >
                   {cooldown > 0
-                    ? `Renvoyer le code dans ${cooldown} s`
-                    : 'Renvoyer le code'}
+                    ? t(
+                        `Renvoyer le code dans ${cooldown} s`,
+                        `Resend code in ${cooldown}s`,
+                      )
+                    : t('Renvoyer le code', 'Resend code')}
                 </Text>
               </Pressable>
             </View>
 
             <Text className="text-center text-[11px] leading-4 text-gray-400">
-              Le code expire dans {request.data?.expiresInMinutes ?? 10} minutes.
-              Trois essais.
+              {t(
+                `Le code expire dans ${request.data?.expiresInMinutes ?? 10} minutes. Trois essais.`,
+                `The code expires in ${request.data?.expiresInMinutes ?? 10} minutes. Three attempts.`,
+              )}
             </Text>
           </>
         ) : (
           <View className="gap-3">
             <Button onPress={send} loading={request.isPending} fullWidth>
-              Recevoir un code
+              {t('Recevoir un code', 'Get a code')}
             </Button>
             {error ? (
               <Text className="text-center text-sm text-red-500">{error}</Text>
@@ -158,8 +172,10 @@ export function AdminAccessGate({
                 pas la raison finit par être vécu comme une tracasserie, et
                 contourné dès que c'est possible. */}
             <Text className="text-center text-[11.5px] leading-4 text-gray-400">
-              Cette étape protège les dossiers d'identité des commerçants et des
-              GP si quelqu'un mettait la main sur votre session.
+              {t(
+                "Cette étape protège les dossiers d'identité des commerçants et des GP si quelqu'un mettait la main sur votre session.",
+                'This step protects merchants’ and travelers’ identity documents if someone gains access to your session.',
+              )}
             </Text>
           </View>
         )}

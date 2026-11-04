@@ -8,8 +8,10 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { colors } from '@/constants/colors';
 import { useFollowing } from '@/hooks/useFollow';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
+import { useAppLanguage } from '@/lib/appLanguage';
 
 export default function FollowingScreen() {
+  const { t } = useAppLanguage();
   const router = useRouter();
   const goBack = useGoBack('/(app)/(tabs)/profile');
   const { isReady } = useRequireAuth('/(app)/following');
@@ -33,27 +35,30 @@ export default function FollowingScreen() {
         <Pressable
           onPress={goBack}
           accessibilityRole="button"
-          accessibilityLabel="Retour"
+          accessibilityLabel={t('Retour', 'Back')}
           className="h-10 w-10 items-center justify-center rounded-full bg-gray-100"
         >
           <Ionicons name="arrow-back" size={20} color={colors.text} />
         </Pressable>
-        <Text className="text-xl font-bold text-gray-900">Mes abonnements</Text>
+        <Text className="text-xl font-bold text-gray-900">{t('Mes abonnements', 'Following')}</Text>
       </View>
 
       {isError ? (
         <EmptyState
           icon="cloud-offline-outline"
-          title="Connexion impossible"
-          actionLabel="Réessayer"
+          title={t('Connexion impossible', 'Connection failed')}
+          actionLabel={t('Réessayer', 'Try again')}
           onAction={() => void refetch()}
         />
       ) : isEmpty ? (
         <EmptyState
           icon="heart-outline"
-          title="Aucun abonnement"
-          description="Suivez des boutiques et des GP pour retrouver leurs publications dans votre fil."
-          actionLabel="Découvrir"
+          title={t('Aucun abonnement', 'Not following anyone yet')}
+          description={t(
+            'Suivez des boutiques et des GP pour retrouver leurs publications dans votre fil.',
+            'Follow shops and personal shoppers to see their posts in your feed.',
+          )}
+          actionLabel={t('Découvrir', 'Discover')}
           onAction={() => router.replace('/(app)/(tabs)')}
         />
       ) : (
@@ -61,14 +66,17 @@ export default function FollowingScreen() {
           {merchants.length > 0 && (
             <>
               <Text className="mb-2 mt-2 text-sm font-semibold text-gray-900">
-                Boutiques ({merchants.length})
+                {t(`Boutiques (${merchants.length})`, `Shops (${merchants.length})`)}
               </Text>
               {merchants.map((m) => (
                 <FollowRow
                   key={m.id}
                   name={m.shopName}
                   avatar={m.user.avatar}
-                  subtitle={`${m.city} · ${m._count.products} produit${m._count.products > 1 ? 's' : ''}`}
+                  subtitle={t(
+                    `${m.city} · ${m._count.products} produit${m._count.products > 1 ? 's' : ''}`,
+                    `${m.city} · ${m._count.products} product${m._count.products === 1 ? '' : 's'}`,
+                  )}
                   rating={m.rating}
                   totalReviews={m.totalReviews}
                   followers={m._count.followers}
@@ -82,14 +90,17 @@ export default function FollowingScreen() {
           {gps.length > 0 && (
             <>
               <Text className="mb-2 mt-4 text-sm font-semibold text-gray-900">
-                GP ({gps.length})
+                {t(`GP (${gps.length})`, `Personal shoppers (${gps.length})`)}
               </Text>
               {gps.map((g) => (
                 <FollowRow
                   key={g.id}
                   name={g.user.name}
                   avatar={g.user.avatar}
-                  subtitle={`${g.totalTrips} voyage${g.totalTrips > 1 ? 's' : ''} · ${g._count.trips} annonce${g._count.trips > 1 ? 's' : ''}`}
+                  subtitle={t(
+                    `${g.totalTrips} voyage${g.totalTrips > 1 ? 's' : ''} · ${g._count.trips} annonce${g._count.trips > 1 ? 's' : ''}`,
+                    `${g.totalTrips} trip${g.totalTrips === 1 ? '' : 's'} · ${g._count.trips} listing${g._count.trips === 1 ? '' : 's'}`,
+                  )}
                   rating={g.rating}
                   totalReviews={g.totalReviews}
                   followers={g._count.followers}
@@ -124,6 +135,7 @@ function FollowRow({
   icon: React.ComponentProps<typeof Ionicons>['name'];
   onPress: () => void;
 }) {
+  const { t } = useAppLanguage();
   return (
     <Pressable
       onPress={onPress}
@@ -148,7 +160,10 @@ function FollowRow({
             </>
           ) : null}
           <Text className="text-xs text-gray-500">
-            {followers} abonné{followers > 1 ? 's' : ''}
+            {t(
+              `${followers} abonné${followers > 1 ? 's' : ''}`,
+              `${followers} follower${followers === 1 ? '' : 's'}`,
+            )}
           </Text>
         </View>
       </View>

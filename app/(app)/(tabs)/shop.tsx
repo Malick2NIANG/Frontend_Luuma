@@ -22,14 +22,9 @@ import {
 } from '@/hooks/useMerchantSpace';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
 import { firstImage } from '@/lib/media';
+import { useAppLanguage } from '@/lib/appLanguage';
 
 const GRID_GAP = 2;
-
-const FILTERS: { key: ProductAvailabilityFilter; label: string }[] = [
-  { key: 'all', label: 'Tous' },
-  { key: 'available', label: 'En vente' },
-  { key: 'unavailable', label: 'Retirés' },
-];
 
 function Stat({ value, label }: { value: string | number; label: string }) {
   return (
@@ -41,15 +36,16 @@ function Stat({ value, label }: { value: string | number; label: string }) {
 }
 
 function ProductCell({ product }: { product: OwnProduct }) {
+  const { t } = useAppLanguage();
   const router = useRouter();
   const cover = firstImage(product.images);
 
   // Un produit retiré ou en rupture doit se repérer d'un coup d'œil dans la
   // grille : c'est la question que le commerçant se pose en arrivant ici.
   const flag = !product.isAvailable
-    ? 'Retiré'
+    ? t('Retiré', 'Removed')
     : product.isOutOfStock
-      ? 'Rupture'
+      ? t('Rupture', 'Out of stock')
       : null;
 
   return (
@@ -107,6 +103,7 @@ function ProductCell({ product }: { product: OwnProduct }) {
  * n'apparaît nulle part passerait pour une panne.
  */
 export default function MerchantSpaceScreen() {
+  const { t } = useAppLanguage();
   const router = useRouter();
   const { width: screenWidth } = useWindowDimensions();
   const skeletonTileWidth = screenWidth / 3 - GRID_GAP;
@@ -114,6 +111,11 @@ export default function MerchantSpaceScreen() {
   const { me, can } = useMe();
 
   const [filter, setFilter] = useState<ProductAvailabilityFilter>('all');
+  const filters: { key: ProductAvailabilityFilter; label: string }[] = [
+    { key: 'all', label: t('Tous', 'All') },
+    { key: 'available', label: t('En vente', 'Available') },
+    { key: 'unavailable', label: t('Retirés', 'Removed') },
+  ];
   const { data: stats } = useMerchantStats();
   const { data: products, isLoading, isError, refetch } = useOwnProducts(filter);
 
@@ -126,9 +128,12 @@ export default function MerchantSpaceScreen() {
       <SafeAreaView className="flex-1 bg-white" edges={['top']}>
         <EmptyState
           icon="storefront-outline"
-          title="Vous n'avez pas encore de boutique"
-          description="Ouvrez votre boutique pour publier vos produits sur Luuma."
-          actionLabel="Ouvrir une boutique"
+          title={t("Vous n'avez pas encore de boutique", "You don't have a shop yet")}
+          description={t(
+            'Ouvrez votre boutique pour publier vos produits sur Luuma.',
+            'Open your shop to publish your products on Luuma.',
+          )}
+          actionLabel={t('Ouvrir une boutique', 'Open a shop')}
           onAction={() => router.replace('/(app)/merchant/onboarding')}
         />
       </SafeAreaView>
@@ -144,7 +149,7 @@ export default function MerchantSpaceScreen() {
           pas un écran empilé. */}
       <View className="border-b border-gray-100 px-3.5 pb-2.5 pt-1">
         <Text numberOfLines={1} className="text-lg font-bold text-gray-900">
-          {me?.merchant?.shopName ?? 'Ma boutique'}
+          {me?.merchant?.shopName ?? t('Ma boutique', 'My shop')}
         </Text>
       </View>
 
@@ -153,9 +158,10 @@ export default function MerchantSpaceScreen() {
           <View className="mx-3.5 mt-3 flex-row gap-2.5 rounded-xl bg-amber-50 p-3">
             <Ionicons name="time-outline" size={18} color="#B45309" />
             <Text className="flex-1 text-[12px] leading-[17px] text-amber-900">
-              Votre boutique est en cours de validation. Vous pouvez déjà créer
-              vos produits : ils resteront invisibles des acheteurs jusqu'à
-              l'approbation.
+              {t(
+                "Votre boutique est en cours de validation. Vous pouvez déjà créer vos produits : ils resteront invisibles des acheteurs jusqu'à l'approbation.",
+                'Your shop is being reviewed. You can already create products, but buyers will not see them until it is approved.',
+              )}
             </Text>
           </View>
         ) : null}
@@ -164,17 +170,19 @@ export default function MerchantSpaceScreen() {
           <View className="mx-3.5 mt-3 flex-row gap-2.5 rounded-xl bg-red-50 p-3">
             <Ionicons name="alert-circle-outline" size={18} color="#B91C1C" />
             <Text className="flex-1 text-[12px] leading-[17px] text-red-900">
-              Votre dossier a été refusé. Contactez le support pour connaître les
-              corrections attendues.
+              {t(
+                'Votre dossier a été refusé. Contactez le support pour connaître les corrections attendues.',
+                'Your application was rejected. Contact support to learn what needs to be corrected.',
+              )}
             </Text>
           </View>
         ) : null}
 
         <View className="flex-row border-b border-gray-100 px-3.5 py-4">
-          <Stat value={stats?.productCount ?? 0} label="Produits" />
-          <Stat value={stats?.followersCount ?? 0} label="Abonnés" />
-          <Stat value={stats?.toPrepareCount ?? 0} label="À préparer" />
-          <Stat value={stats?.soldCount ?? 0} label="Vendus" />
+          <Stat value={stats?.productCount ?? 0} label={t('Produits', 'Products')} />
+          <Stat value={stats?.followersCount ?? 0} label={t('Abonnés', 'Followers')} />
+          <Stat value={stats?.toPrepareCount ?? 0} label={t('À préparer', 'To prepare')} />
+          <Stat value={stats?.soldCount ?? 0} label={t('Vendus', 'Sold')} />
         </View>
 
         <View className="flex-row gap-2 px-3.5 py-3">
@@ -184,7 +192,7 @@ export default function MerchantSpaceScreen() {
           >
             <Ionicons name="cube-outline" size={15} color={colors.text} />
             <Text className="text-[12.5px] font-semibold text-gray-900">
-              Mes colis
+              {t('Mes colis', 'My packages')}
             </Text>
             {stats && stats.toPrepareCount > 0 ? (
               <View className="ml-0.5 h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1">
@@ -205,13 +213,13 @@ export default function MerchantSpaceScreen() {
           >
             <Ionicons name="add" size={17} color={colors.white} />
             <Text className="text-[12.5px] font-semibold text-white">
-              Nouveau produit
+              {t('Nouveau produit', 'New product')}
             </Text>
           </Pressable>
         </View>
 
         <View className="flex-row gap-2 px-3.5 pb-3">
-          {FILTERS.map((item) => {
+          {filters.map((item) => {
             const active = filter === item.key;
             return (
               <Pressable
@@ -246,9 +254,12 @@ export default function MerchantSpaceScreen() {
         ) : isError ? (
           <EmptyState
             icon="cloud-offline-outline"
-            title="Chargement impossible"
-            description="Vérifiez votre connexion puis réessayez."
-            actionLabel="Réessayer"
+            title={t('Chargement impossible', 'Unable to load')}
+            description={t(
+              'Vérifiez votre connexion puis réessayez.',
+              'Check your connection and try again.',
+            )}
+            actionLabel={t('Réessayer', 'Try again')}
             onAction={() => void refetch()}
           />
         ) : !products || products.data.length === 0 ? (
@@ -256,17 +267,20 @@ export default function MerchantSpaceScreen() {
             icon="pricetags-outline"
             title={
               filter === 'all'
-                ? 'Aucun produit'
+                ? t('Aucun produit', 'No products')
                 : filter === 'available'
-                  ? 'Aucun produit en vente'
-                  : 'Aucun produit retiré'
+                  ? t('Aucun produit en vente', 'No products available')
+                  : t('Aucun produit retiré', 'No removed products')
             }
             description={
               filter === 'all'
-                ? 'Publiez votre premier produit pour que les acheteurs le découvrent.'
+                ? t(
+                    'Publiez votre premier produit pour que les acheteurs le découvrent.',
+                    'Publish your first product so shoppers can discover it.',
+                  )
                 : undefined
             }
-            actionLabel={filter === 'all' ? 'Créer un produit' : undefined}
+            actionLabel={filter === 'all' ? t('Créer un produit', 'Create a product') : undefined}
             onAction={
               filter === 'all'
                 ? () => router.push('/(app)/merchant/products/new')

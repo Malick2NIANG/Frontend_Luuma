@@ -3,7 +3,8 @@ import { useRouter } from 'expo-router';
 import { Pressable, Text, View } from 'react-native';
 import { PostHeader } from '@/components/feed/PostHeader';
 import { colors } from '@/constants/colors';
-import { daysUntil, formatDate, formatWeight, formatXof } from '@/lib/format';
+import { daysUntil, formatWeight, formatXof } from '@/lib/format';
+import { useAppLanguage } from '@/lib/appLanguage';
 import type { FeedAuthor, FeedTrip } from '@/types/feed.types';
 
 export interface TripPostProps {
@@ -21,9 +22,14 @@ export interface TripPostProps {
  */
 export function TripPost({ trip, author, publishedAt }: TripPostProps) {
   const router = useRouter();
+  const { language, t } = useAppLanguage();
 
   const detailPath = `/(app)/trips/${trip.id}`;
   const days = daysUntil(trip.departureDate);
+  const departureDate = new Date(trip.departureDate).toLocaleDateString(
+    language === 'fr' ? 'fr-FR' : 'en-US',
+    { day: 'numeric', month: 'long', year: 'numeric' },
+  );
   const fillRatio =
     trip.maxWeight > 0 ? trip.usedWeight / trip.maxWeight : 0;
 
@@ -51,19 +57,24 @@ export function TripPost({ trip, author, publishedAt }: TripPostProps) {
           </View>
 
           <Text className="mt-1 text-[12px] text-gray-600">
-            Départ le {formatDate(trip.departureDate)}
+            {t('Départ le', 'Departure on')} {departureDate}
             {/* Le compte à rebours prime sur la date : c'est lui qui dit s'il
                 reste le temps de commander. */}
-            {days >= 0 ? ` · dans ${days} jour${days > 1 ? 's' : ''}` : ''}
+            {days >= 0
+              ? ` · ${t('dans', 'in')} ${days} ${t(
+                  days > 1 ? 'jours' : 'jour',
+                  days > 1 ? 'days' : 'day',
+                )}`
+              : ''}
           </Text>
 
           <View className="mt-3 flex-row items-center gap-4">
             <Metric
-              label="Tarif"
+              label={t('Tarif', 'Rate')}
               value={`${formatXof(trip.pricePerKg)} / kg`}
             />
             <Metric
-              label="Reste"
+              label={t('Reste', 'Remaining')}
               value={formatWeight(trip.remainingWeight)}
             />
           </View>
@@ -87,10 +98,15 @@ export function TripPost({ trip, author, publishedAt }: TripPostProps) {
       <Pressable
         onPress={() => router.push(detailPath)}
         accessibilityRole="button"
-        accessibilityLabel={`Voir le trajet ${trip.originCity} vers ${trip.destCity}`}
+        accessibilityLabel={t(
+          `Voir le trajet ${trip.originCity} vers ${trip.destCity}`,
+          `View the trip from ${trip.originCity} to ${trip.destCity}`,
+        )}
         className="mx-3 mb-1 mt-2.5 flex-row items-center justify-center gap-1.5 rounded-lg bg-primary py-2.5"
       >
-        <Text className="text-[13px] font-bold text-white">Voir plus</Text>
+        <Text className="text-[13px] font-bold text-white">
+          {t('Voir plus', 'View more')}
+        </Text>
         <Ionicons name="chevron-forward" size={14} color={colors.white} />
       </Pressable>
     </View>

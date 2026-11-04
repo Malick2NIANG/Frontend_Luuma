@@ -4,6 +4,8 @@ import { View } from 'react-native';
 export interface BrandLogoProps {
   width: number;
   height: number;
+  light?: boolean;
+  onLoad?: () => void;
 }
 
 /**
@@ -16,13 +18,19 @@ export interface BrandLogoProps {
  * Le rapport 254:179 doit être respecté par chaque appelant, sinon l'image se
  * déforme — `contentFit="contain"` protège du pire mais laisse des marges.
  */
-export function BrandLogo({ width, height }: BrandLogoProps) {
+export function BrandLogo({
+  width,
+  height,
+  light = false,
+  onLoad,
+}: BrandLogoProps) {
   return (
     <View>
       <Image
         source={require('@/assets/logo-mark.png')}
         contentFit="contain"
-        style={{ width, height }}
+        style={{ width, height, ...(light ? { tintColor: '#FFFFFF' } : {}) }}
+        onLoad={onLoad}
       />
     </View>
   );

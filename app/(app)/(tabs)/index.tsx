@@ -22,6 +22,7 @@ import {
 import { colors } from '@/constants/colors';
 import { useConversations } from '@/hooks/useDirectChat';
 import { useFeed } from '@/hooks/useFeed';
+import { useAppLanguage } from '@/lib/appLanguage';
 import { cartItemCount, useCartStore } from '@/store/cart.store';
 import type { FeedItem } from '@/types/feed.types';
 
@@ -37,6 +38,7 @@ import type { FeedItem } from '@/types/feed.types';
  * Pas de champ de recherche non plus, pour la même raison.
  */
 export default function FeedScreen() {
+  const { t } = useAppLanguage();
   const router = useRouter();
 
   // Le logo ramène en haut du fil, comme sur Instagram — c'est le geste
@@ -67,7 +69,7 @@ export default function FeedScreen() {
         <View className="flex-row items-center justify-between px-3.5 pb-2 pt-1">
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Revenir en haut du fil"
+            accessibilityLabel={t('Revenir en haut du fil', 'Back to top of feed')}
             onPress={() =>
               listRef.current?.scrollToOffset({ offset: 0, animated: true })
             }
@@ -81,18 +83,18 @@ export default function FeedScreen() {
                 du compte. */}
             <HeaderButton
               icon="notifications-outline"
-              label="Notifications"
+              label={t('Notifications', 'Notifications')}
               badge={unreadCount}
               onPress={() => router.push('/(app)/(tabs)/messages')}
             />
             <HeaderButton
               icon="heart-outline"
-              label="Mes favoris"
+              label={t('Mes favoris', 'My favorites')}
               onPress={() => router.push('/(app)/favorites')}
             />
             <HeaderButton
               icon="cart-outline"
-              label="Mon panier"
+              label={t('Mon panier', 'My cart')}
               badge={badgeCount}
               onPress={() => router.push('/(app)/cart')}
             />
@@ -113,9 +115,12 @@ export default function FeedScreen() {
       ) : isError ? (
         <EmptyState
           icon="cloud-offline-outline"
-          title="Connexion impossible"
-          description="Impossible de charger le fil. Vérifiez votre connexion."
-          actionLabel="Réessayer"
+          title={t('Connexion impossible', 'Unable to connect')}
+          description={t(
+            'Impossible de charger le fil. Vérifiez votre connexion.',
+            'Unable to load the feed. Check your connection.',
+          )}
+          actionLabel={t('Réessayer', 'Try again')}
           onAction={() => void refetch()}
         />
       ) : (
@@ -136,8 +141,11 @@ export default function FeedScreen() {
           ListEmptyComponent={
             <EmptyState
               icon="newspaper-outline"
-              title="Le fil est encore vide"
-              description="Aucun commerçant ni GP n'a encore publié."
+              title={t('Le fil est encore vide', 'Your feed is empty')}
+              description={t(
+                "Aucun commerçant ni GP n'a encore publié.",
+                'No sellers or travelers have posted yet.',
+              )}
             />
           }
           ListFooterComponent={
@@ -182,12 +190,16 @@ function HeaderButton({
   badge?: number;
   onPress: () => void;
 }) {
+  const { t } = useAppLanguage();
+
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={
-        badge > 0 ? `${label} (${badge} en attente)` : label
+        badge > 0
+          ? t(`${label} (${badge} en attente)`, `${label} (${badge} pending)`)
+          : label
       }
       className="h-10 w-10 items-center justify-center rounded-full bg-gray-100"
     >

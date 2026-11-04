@@ -10,6 +10,7 @@ import {
   View,
 } from 'react-native';
 import { useContentWidth } from '@/hooks/useContentWidth';
+import { useAppLanguage } from '@/lib/appLanguage';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FilterSheet } from '@/components/search/FilterSheet';
 import { GpCard } from '@/components/search/GpCard';
@@ -34,18 +35,6 @@ import {
 
 type Segment = 'products' | 'gps' | 'merchants';
 
-const SEGMENTS: { value: Segment; label: string }[] = [
-  { value: 'products', label: 'Produits' },
-  { value: 'gps', label: 'GP' },
-  { value: 'merchants', label: 'Boutiques' },
-];
-
-const PLACEHOLDERS: Record<Segment, string> = {
-  products: 'Un produit, une marque…',
-  gps: 'Une destination : Paris, Lyon…',
-  merchants: 'Le nom d’une boutique',
-};
-
 /**
  * Largeur visée pour une vignette de résultat, en points.
  *
@@ -67,7 +56,19 @@ const GRID_GUTTER = 8;
  * dupliquer par segment obligerait à retaper « Paris » en changeant d'onglet.
  */
 export default function SearchScreen() {
+  const { t } = useAppLanguage();
   const contentWidth = useContentWidth();
+
+  const segments: { value: Segment; label: string }[] = [
+    { value: 'products', label: t('Produits', 'Products') },
+    { value: 'gps', label: t('GP', 'Travelers') },
+    { value: 'merchants', label: t('Boutiques', 'Shops') },
+  ];
+  const placeholders: Record<Segment, string> = {
+    products: t('Un produit, une marque…', 'A product or brand…'),
+    gps: t('Une destination : Paris, Lyon…', 'A destination: Paris, Lyon…'),
+    merchants: t('Le nom d’une boutique', 'A shop name'),
+  };
 
   const [segment, setSegment] = useState<Segment>('products');
   const [query, setQuery] = useState('');
@@ -111,14 +112,19 @@ export default function SearchScreen() {
             value={query}
             onChangeText={setQuery}
             onFocus={() => setFocused(true)}
-            placeholder={PLACEHOLDERS[segment]}
+            placeholder={placeholders[segment]}
             placeholderTextColor="#9CA3AF"
             returnKeyType="search"
             onSubmitEditing={() => setFocused(false)}
             className="flex-1 text-[15px] text-gray-900"
           />
           {query.length > 0 && (
-            <Pressable onPress={() => setQuery('')} hitSlop={8}>
+            <Pressable
+              onPress={() => setQuery('')}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel={t('Effacer la recherche', 'Clear search')}
+            >
               <Ionicons name="close-circle" size={17} color="#9CA3AF" />
             </Pressable>
           )}
@@ -129,13 +135,20 @@ export default function SearchScreen() {
             onPress={() => {
               setFocused(false);
             }}
+            accessibilityRole="button"
           >
-            <Text className="text-xs text-gray-500">Annuler</Text>
+            <Text className="text-xs text-gray-500">{t('Annuler', 'Cancel')}</Text>
           </Pressable>
         ) : segment === 'products' ? (
           <Pressable
             onPress={() => setSheetOpen(true)}
             className="h-10 w-10 items-center justify-center rounded-xl bg-gray-100"
+            accessibilityRole="button"
+            accessibilityLabel={
+              activeFilters > 0
+                ? t(`Filtres, ${activeFilters} actifs`, `Filters, ${activeFilters} active`)
+                : t('Filtres', 'Filters')
+            }
           >
             <Ionicons name="options-outline" size={19} color={colors.text} />
             {activeFilters > 0 && (
@@ -151,7 +164,7 @@ export default function SearchScreen() {
 
       {!showSuggestions && (
         <View className="flex-row gap-2 px-3 pb-2.5">
-          {SEGMENTS.map((item) => (
+          {segments.map((item) => (
             <Pressable
               key={item.value}
               onPress={() => setSegment(item.value)}
@@ -203,11 +216,14 @@ export default function SearchScreen() {
               ))}
             </View>
           }
-          emptyTitle={query ? 'Aucun résultat' : 'Le catalogue est vide'}
+          emptyTitle={query ? t('Aucun résultat', 'No results') : t('Le catalogue est vide', 'The catalog is empty')}
           emptyDescription={
             query
-              ? 'Essayez un autre mot-clé, ou élargissez vos filtres.'
-              : "Aucun produit n'est encore en ligne."
+              ? t(
+                  'Essayez un autre mot-clé, ou élargissez vos filtres.',
+                  'Try another keyword or broaden your filters.',
+                )
+              : t("Aucun produit n'est encore en ligne.", 'No products are listed yet.')
           }
         >
           <FlashList
@@ -239,14 +255,22 @@ export default function SearchScreen() {
               ))}
             </View>
           }
-          emptyTitle="Aucun GP sur cette destination"
-          emptyDescription="Seuls les GP ayant un voyage à venir apparaissent ici."
+          emptyTitle={t('Aucun GP sur cette destination', 'No travelers for this destination')}
+          emptyDescription={t(
+            'Seuls les GP ayant un voyage à venir apparaissent ici.',
+            'Only travelers with an upcoming trip appear here.',
+          )}
         >
           <FlashList
             data={gps.data ?? []}
             keyExtractor={(item) => item.id}
             ListHeaderComponent={
-              <Note text="Les GP transportent vos achats. Choisissez-en un après votre panier, ou contactez-le avant." />
+              <Note
+                text={t(
+                  'Les GP transportent vos achats. Choisissez-en un après votre panier, ou contactez-le avant.',
+                  'Travelers deliver your purchases. Choose one after adding items to your cart, or contact them beforehand.',
+                )}
+              />
             }
             renderItem={({ item }) => <GpCard gp={item} />}
           />
@@ -264,8 +288,8 @@ export default function SearchScreen() {
               ))}
             </View>
           }
-          emptyTitle="Aucune boutique"
-          emptyDescription="Essayez un autre nom."
+          emptyTitle={t('Aucune boutique', 'No shops')}
+          emptyDescription={t('Essayez un autre nom.', 'Try another name.')}
         >
           <FlashList
             data={merchants.data ?? []}
@@ -306,6 +330,8 @@ function ResultsPane({
   skeleton: React.ReactNode;
   children: React.ReactNode;
 }) {
+  const { t } = useAppLanguage();
+
   if (isLoading) {
     return <View className="flex-1">{skeleton}</View>;
   }
@@ -314,9 +340,9 @@ function ResultsPane({
     return (
       <EmptyState
         icon="cloud-offline-outline"
-        title="Connexion impossible"
-        description="Impossible de charger les résultats."
-        actionLabel="Réessayer"
+        title={t('Connexion impossible', 'Unable to connect')}
+        description={t('Impossible de charger les résultats.', 'Unable to load results.')}
+        actionLabel={t('Réessayer', 'Try again')}
         onAction={onRetry}
       />
     );
@@ -350,6 +376,7 @@ function SuggestionList({
   onPickMerchant: (id: string) => void;
   onPickDestination: (city: string) => void;
 }) {
+  const { t } = useAppLanguage();
   const isEmpty =
     data.products.length === 0 &&
     data.merchants.length === 0 &&
@@ -359,8 +386,10 @@ function SuggestionList({
     return (
       <View className="px-4 py-6">
         <Text className="text-center text-xs text-gray-400">
-          Aucune suggestion — lancez quand même la recherche, elle tolère les
-          fautes et les accents.
+          {t(
+            'Aucune suggestion — lancez quand même la recherche, elle tolère les fautes et les accents.',
+            'No suggestions — try searching anyway; search handles typos and accents.',
+          )}
         </Text>
       </View>
     );
@@ -370,7 +399,7 @@ function SuggestionList({
     <ScrollView keyboardShouldPersistTaps="handled">
       {data.products.length > 0 && (
         <>
-          <GroupLabel text="Suggestions" />
+          <GroupLabel text={t('Suggestions', 'Suggestions')} />
           {data.products.map((name) => (
             <Pressable
               key={name}
@@ -386,7 +415,7 @@ function SuggestionList({
 
       {data.merchants.length > 0 && (
         <>
-          <GroupLabel text="Boutiques" />
+          <GroupLabel text={t('Boutiques', 'Shops')} />
           {data.merchants.map((merchant) => (
             <Pressable
               key={merchant.id}
@@ -408,7 +437,7 @@ function SuggestionList({
 
       {data.destinations.length > 0 && (
         <>
-          <GroupLabel text="Destinations" />
+          <GroupLabel text={t('Destinations', 'Destinations')} />
           {data.destinations.map((destination) => (
             <Pressable
               key={`${destination.destCity}-${destination.destCountry}`}

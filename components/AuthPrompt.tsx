@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Text, View } from 'react-native';
 import { Button } from '@/components/ui/Button';
+import { useAppLanguage } from '@/lib/appLanguage';
 
 export interface AuthPromptProps {
   icon?: React.ComponentProps<typeof Ionicons>['name'];
@@ -25,6 +26,7 @@ export function AuthPrompt({
   returnTo,
 }: AuthPromptProps) {
   const router = useRouter();
+  const { t } = useAppLanguage();
 
   const goTo = (pathname: '/(auth)/login' | '/(auth)/register') => {
     router.push({ pathname, params: { returnTo } });
@@ -39,7 +41,7 @@ export function AuthPrompt({
       <Text className="mt-1 text-center text-sm text-gray-500">{description}</Text>
 
       <Button fullWidth className="mt-6" onPress={() => goTo('/(auth)/register')}>
-        Créer un compte
+        {t('Créer un compte', 'Create an account')}
       </Button>
       <Button
         variant="ghost"
@@ -47,7 +49,7 @@ export function AuthPrompt({
         className="mt-1"
         onPress={() => goTo('/(auth)/login')}
       >
-        J'ai déjà un compte
+        {t("J'ai déjà un compte", 'I already have an account')}
       </Button>
     </View>
   );

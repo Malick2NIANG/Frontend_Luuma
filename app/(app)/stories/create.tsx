@@ -23,6 +23,7 @@ import { api } from '@/lib/api';
 import { useMe } from '@/hooks/useMe';
 import { useUpload } from '@/hooks/useUpload';
 import type { RoleType, StoryMediaType } from '@/types/api.types';
+import { useAppLanguage } from '@/lib/appLanguage';
 
 /** Fonds proposés pour une story texte — la palette de la marque. */
 const BACKGROUNDS = [
@@ -37,6 +38,7 @@ const BACKGROUNDS = [
 const MAX_TEXT = 280;
 
 export default function CreateStoryScreen() {
+  const { t } = useAppLanguage();
   const router = useRouter();
   const goBack = useGoBack('/(app)/(tabs)');
   const queryClient = useQueryClient();
@@ -70,7 +72,7 @@ export default function CreateStoryScreen() {
       void queryClient.invalidateQueries({ queryKey: ['stories'] });
       goBack();
     },
-    onError: () => setError("La publication a échoué. Réessayez."),
+    onError: () => setError(t("La publication a échoué. Réessayez.", 'Publishing failed. Please try again.')),
   });
 
   if (rolesLoading) {
@@ -90,9 +92,12 @@ export default function CreateStoryScreen() {
         <Header onClose={goBack} />
         <EmptyState
           icon="storefront-outline"
-          title="Réservé aux boutiques et aux GP"
-          description="Les stories servent à annoncer une arrivée de stock ou un départ. Ouvrez une boutique ou devenez GP pour en publier."
-          actionLabel="Voir mon profil"
+          title={t('Réservé aux boutiques et aux GP', 'For shops and personal shoppers only')}
+          description={t(
+            'Les stories servent à annoncer une arrivée de stock ou un départ. Ouvrez une boutique ou devenez GP pour en publier.',
+            'Stories are for announcing new stock or an upcoming trip. Open a shop or become a personal shopper to publish one.',
+          )}
+          actionLabel={t('Voir mon profil', 'View my profile')}
           onAction={() => router.replace('/(app)/(tabs)/profile')}
         />
       </SafeAreaView>
@@ -109,7 +114,7 @@ export default function CreateStoryScreen() {
   const pickImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      setError("L'accès à vos photos est nécessaire pour publier une image.");
+      setError(t("L'accès à vos photos est nécessaire pour publier une image.", 'Photo library access is required to publish an image.'));
       return;
     }
 
@@ -130,7 +135,7 @@ export default function CreateStoryScreen() {
 
     if (mode === 'TEXT') {
       if (!text.trim()) {
-        setError('Écrivez quelque chose avant de publier.');
+        setError(t('Écrivez quelque chose avant de publier.', 'Write something before publishing.'));
         return;
       }
       publish.mutate({
@@ -143,7 +148,7 @@ export default function CreateStoryScreen() {
     }
 
     if (!imageUri) {
-      setError('Choisissez une image.');
+      setError(t('Choisissez une image.', 'Choose an image.'));
       return;
     }
 
@@ -154,7 +159,7 @@ export default function CreateStoryScreen() {
     });
 
     if (!uploaded) {
-      setError("L'envoi de l'image a échoué.");
+      setError(t("L'envoi de l'image a échoué.", 'Image upload failed.'));
       return;
     }
 
@@ -181,12 +186,12 @@ export default function CreateStoryScreen() {
           {canChooseRole && (
             <View className="flex-row gap-2 px-4 pb-1 pt-3">
               <RolePill
-                label="Ma boutique"
+                label={t('Ma boutique', 'My shop')}
                 active={activeRole === 'MERCHANT'}
                 onPress={() => setRole('MERCHANT')}
               />
               <RolePill
-                label="Mon profil GP"
+                label={t('Mon profil GP', 'My personal shopper profile')}
                 active={activeRole === 'GP'}
                 onPress={() => setRole('GP')}
               />
@@ -210,7 +215,7 @@ export default function CreateStoryScreen() {
                 <TextInput
                   value={text}
                   onChangeText={(value) => setText(value.slice(0, MAX_TEXT))}
-                  placeholder="Écrivez votre annonce…"
+                  placeholder={t('Écrivez votre annonce…', 'Write your story…')}
                   placeholderTextColor="rgba(255,255,255,0.65)"
                   multiline
                   textAlign="center"
@@ -240,7 +245,7 @@ export default function CreateStoryScreen() {
               <TextInput
                 value={text}
                 onChangeText={(value) => setText(value.slice(0, MAX_TEXT))}
-                placeholder="Légende (facultatif)"
+                placeholder={t('Légende (facultatif)', 'Caption (optional)')}
                 placeholderTextColor="#9CA3AF"
                 className="rounded-xl bg-gray-100 px-3 py-3 text-base text-gray-900"
               />
@@ -256,10 +261,10 @@ export default function CreateStoryScreen() {
                 setImageUri(null);
               }}
             >
-              Texte
+              {t('Texte', 'Text')}
             </Button>
             <Button variant="secondary" className="flex-1" onPress={pickImage}>
-              Photo
+              {t('Photo', 'Photo')}
             </Button>
           </View>
 
@@ -270,10 +275,13 @@ export default function CreateStoryScreen() {
 
         <View className="border-t border-gray-100 px-4 pt-3">
           <Button fullWidth disabled={busy} onPress={() => void handlePublish()}>
-            {busy ? 'Publication…' : 'Publier ma story'}
+            {busy ? t('Publication…', 'Publishing…') : t('Publier ma story', 'Publish my story')}
           </Button>
           <Text className="mt-2 text-center text-[11px] text-gray-500">
-            Visible 24 heures par vos abonnés et vos clients en cours de commande.
+            {t(
+              'Visible 24 heures par vos abonnés et vos clients en cours de commande.',
+              'Visible for 24 hours to your followers and customers with ongoing orders.',
+            )}
           </Text>
         </View>
       </KeyboardAvoidingView>
@@ -282,9 +290,10 @@ export default function CreateStoryScreen() {
 }
 
 function Header({ onClose }: { onClose: () => void }) {
+  const { t } = useAppLanguage();
   return (
     <View className="flex-row items-center justify-between border-b border-gray-100 px-4 py-3">
-      <Text className="text-base font-bold text-gray-900">Nouvelle story</Text>
+      <Text className="text-base font-bold text-gray-900">{t('Nouvelle story', 'New story')}</Text>
       <Pressable onPress={onClose} hitSlop={12}>
         <Ionicons name="close" size={24} color={colors.text} />
       </Pressable>

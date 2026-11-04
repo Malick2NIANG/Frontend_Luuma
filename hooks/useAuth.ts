@@ -1,7 +1,10 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
+import * as LocalAuthentication from 'expo-local-authentication';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
+import { Alert, Platform } from 'react-native';
 import { api } from '@/lib/api';
+import { useAppLanguage } from '@/lib/appLanguage';
 import { useAuthStore } from '@/store/auth.store';
 import { useCartStore } from '@/store/cart.store';
 import type { User } from '@/types/api.types';
@@ -64,33 +67,120 @@ interface BetterAuthErrorBody {
   message?: string;
 }
 
-// Only codes actually observed from the running server are mapped here;
-// anything else falls back to a generic French message rather than a guess.
-const ERROR_MESSAGES: Record<string, string> = {
-  INVALID_EMAIL_OR_PASSWORD: 'Email ou mot de passe incorrect.',
-  USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL: 'Un compte existe déjà avec cet email.',
-  MISSING_FIELD: 'Merci de renseigner tous les champs obligatoires.',
-  PASSWORD_TOO_SHORT: 'Le mot de passe est trop court (8 caractères minimum).',
-  PASSWORD_TOO_LONG: 'Le mot de passe est trop long.',
-  VALIDATION_ERROR: 'Merci de vérifier les informations saisies.',
+const ERROR_MESSAGES: Record<string, [string, string]> = {
+  INVALID_EMAIL_OR_PASSWORD: [
+    'Email ou mot de passe incorrect.',
+    'Incorrect email or password.',
+  ],
+  USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL: [
+    'Un compte existe déjà avec cet email.',
+    'An account already exists with this email.',
+  ],
+  MISSING_FIELD: [
+    'Merci de renseigner tous les champs obligatoires.',
+    'Please fill in all required fields.',
+  ],
+  PASSWORD_TOO_SHORT: [
+    'Le mot de passe est trop court (8 caractères minimum).',
+    'Password is too short (minimum 8 characters).',
+  ],
+  PASSWORD_TOO_LONG: [
+    'Le mot de passe est trop long.',
+    'Password is too long.',
+  ],
+  VALIDATION_ERROR: [
+    'Merci de vérifier les informations saisies.',
+    'Please check the information you entered.',
+  ],
 };
 
-const FALLBACK_ERROR_MESSAGE = 'Une erreur est survenue. Veuillez réessayer.';
-const NETWORK_ERROR_MESSAGE = 'Impossible de contacter le serveur. Vérifiez votre connexion.';
+const FALLBACK_ERROR_MESSAGE = [
+  'Une erreur est survenue. Veuillez réessayer.',
+  'Something went wrong. Please try again.',
+] as const;
+const NETWORK_ERROR_MESSAGE = [
+  'Impossible de contacter le serveur. Vérifiez votre connexion.',
+  'Unable to reach the server. Check your connection.',
+] as const;
 
-function getAuthErrorMessage(error: unknown): string {
+function getAuthErrorMessage(
+  error: unknown,
+  t: (french: string, english: string) => string,
+): string {
   if (axios.isAxiosError(error)) {
-    if (!error.response) return NETWORK_ERROR_MESSAGE;
+    if (!error.response) {
+      return t(NETWORK_ERROR_MESSAGE[0], NETWORK_ERROR_MESSAGE[1]);
+    }
 
     const body = error.response.data as BetterAuthErrorBody | undefined;
     if (body?.code && body.code in ERROR_MESSAGES) {
-      return ERROR_MESSAGES[body.code];
+      const [french, english] = ERROR_MESSAGES[body.code];
+      return t(french, english);
     }
   }
-  return FALLBACK_ERROR_MESSAGE;
+  return t(FALLBACK_ERROR_MESSAGE[0], FALLBACK_ERROR_MESSAGE[1]);
 }
 
 const DEFAULT_DESTINATION = '/(app)/(tabs)' as const;
+
+function offerBiometricSetup(
+  t: (french: string, english: string) => string,
+): void {
+  if (Platform.OS === 'web') return;
+
+  const { biometricEnabled, biometricPrompted, enableBiometrics, markBiometricPrompted } =
+    useAuthStore.getState();
+  if (biometricEnabled || biometricPrompted) return;
+
+  void Promise.all([
+    LocalAuthentication.hasHardwareAsync(),
+    LocalAuthentication.isEnrolledAsync(),
+  ])
+    .then(([hasHardware, isEnrolled]) => {
+      if (!hasHardware || !isEnrolled) return;
+
+      void markBiometricPrompted();
+      Alert.alert(
+        t('Déverrouillez Luuma plus rapidement', 'Unlock Luuma faster'),
+        t(
+          'Utilisez Face ID, votre empreinte ou le code de votre appareil pour retrouver votre session.',
+          'Use Face ID, your fingerprint, or your device passcode to access your saved session.',
+        ),
+        [
+          {
+            text: t('Plus tard', 'Not now'),
+            style: 'cancel',
+          },
+          {
+            text: t('Activer', 'Enable'),
+            onPress: () => {
+              void enableBiometrics().then((result) => {
+                if (result === 'failed') {
+                  Alert.alert(
+                    t('Activation impossible', 'Could not enable biometrics'),
+                    t(
+                      'Réessayez depuis votre appareil.',
+                      'Please try again on your device.',
+                    ),
+                  );
+                }
+              });
+            },
+          },
+        ],
+      );
+    })
+    .catch((error: unknown) => {
+      console.error('Unable to check biometric availability:', error);
+      Alert.alert(
+        t('Vérification impossible', 'Could not check availability'),
+        t(
+          'La connexion biométrique n’a pas pu être vérifiée.',
+          'Biometric sign-in could not be checked.',
+        ),
+      );
+    });
+}
 
 /**
  * Destination après authentification.
@@ -137,6 +227,7 @@ export function useLogin() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const setAuth = useAuthStore((state) => state.setAuth);
+  const { t } = useAppLanguage();
   const destination = usePostAuthDestination();
 
   const mutation = useMutation({
@@ -152,16 +243,21 @@ export function useLogin() {
       queryClient.clear();
       setAuth(toUser(data.user), data.token);
       router.replace(destination);
+      offerBiometricSetup(t);
     },
   });
 
-  return { ...mutation, errorMessage: mutation.error ? getAuthErrorMessage(mutation.error) : null };
+  return {
+    ...mutation,
+    errorMessage: mutation.error ? getAuthErrorMessage(mutation.error, t) : null,
+  };
 }
 
 export function useRegister() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const setAuth = useAuthStore((state) => state.setAuth);
+  const { t } = useAppLanguage();
   const destination = usePostAuthDestination();
 
   const mutation = useMutation({
@@ -176,16 +272,21 @@ export function useRegister() {
       queryClient.clear();
       setAuth(toUser(data.user), data.token);
       router.replace(destination);
+      offerBiometricSetup(t);
     },
   });
 
-  return { ...mutation, errorMessage: mutation.error ? getAuthErrorMessage(mutation.error) : null };
+  return {
+    ...mutation,
+    errorMessage: mutation.error ? getAuthErrorMessage(mutation.error, t) : null,
+  };
 }
 
 export function useLogout() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const clearAuth = useAuthStore((state) => state.logout);
+  const { t } = useAppLanguage();
 
   const mutation = useMutation({
     mutationFn: async () => {
@@ -217,5 +318,8 @@ export function useLogout() {
     },
   });
 
-  return { ...mutation, errorMessage: mutation.error ? getAuthErrorMessage(mutation.error) : null };
+  return {
+    ...mutation,
+    errorMessage: mutation.error ? getAuthErrorMessage(mutation.error, t) : null,
+  };
 }

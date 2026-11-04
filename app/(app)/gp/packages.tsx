@@ -26,6 +26,7 @@ import { useRequireAuth } from '@/hooks/useRequireAuth';
 import { useUpload } from '@/hooks/useUpload';
 import { firstImage } from '@/lib/media';
 import type { PackageStatus } from '@/types/api.types';
+import { useAppLanguage } from '@/lib/appLanguage';
 
 type GpAction = 'receive' | 'deliver' | 'refuse';
 
@@ -41,23 +42,41 @@ const STATUS_TONE: Record<PackageStatus, { bg: string; text: string }> = {
 
 const ACTION_COPY: Record<
   GpAction,
-  { title: string; body: string; confirm: string }
+  { title: string; body: string; confirm: string; titleEn: string; bodyEn: string; confirmEn: string }
 > = {
   receive: {
     title: 'Réception du colis',
     body: "Photographiez le colis tel que vous le recevez. C'est cette photo qui fait foi si le contenu est contesté à l'arrivée.",
     confirm: 'Confirmer la réception',
+    titleEn: 'Package received',
+    bodyEn: 'Take a photo of the package as you receive it. This photo will serve as evidence if its contents are disputed on arrival.',
+    confirmEn: 'Confirm receipt',
   },
   deliver: {
     title: 'Remise au client',
     body: 'Photographiez le colis au moment de la remise. Elle atteste que la livraison a bien eu lieu.',
     confirm: 'Confirmer la livraison',
+    titleEn: 'Hand over to customer',
+    bodyEn: 'Take a photo of the package when handing it over. This confirms that delivery took place.',
+    confirmEn: 'Confirm delivery',
   },
   refuse: {
     title: 'Refuser ce colis',
     body: "Le motif est transmis au client et au commerçant, et sert de preuve si un litige est ouvert. Le client sera remboursé au prorata de ce colis.",
     confirm: 'Refuser le colis',
+    titleEn: 'Refuse this package',
+    bodyEn: 'The reason will be sent to the customer and shop and can be used as evidence in a dispute. The customer will be refunded for this package.',
+    confirmEn: 'Refuse package',
   },
+};
+const PACKAGE_STATUS_LABELS_EN: Record<PackageStatus, string> = {
+  AWAITING_DROPOFF: 'Awaiting drop-off',
+  DROPPED_OFF: 'Dropped off',
+  RECEIVED_BY_GP: 'Received by personal shopper',
+  IN_TRANSIT: 'In transit',
+  DELIVERED: 'Delivered',
+  REFUSED: 'Refused',
+  CANCELLED: 'Cancelled',
 };
 
 function PackageCard({
@@ -67,6 +86,7 @@ function PackageCard({
   pkg: MerchantPackage;
   onAction: (action: GpAction) => void;
 }) {
+  const { t } = useAppLanguage();
   const tone = STATUS_TONE[pkg.status];
   const canReceive = pkg.status === 'DROPPED_OFF';
   const canDeliver = pkg.status === 'RECEIVED_BY_GP' || pkg.status === 'IN_TRANSIT';
@@ -75,7 +95,7 @@ function PackageCard({
     <View className="mx-3.5 mb-3 overflow-hidden rounded-xl border border-gray-200">
       <View className={['flex-row items-center justify-between px-3 py-2', tone.bg].join(' ')}>
         <Text className={['text-[11.5px] font-bold', tone.text].join(' ')}>
-          {PACKAGE_STATUS_LABELS[pkg.status]}
+          {t(PACKAGE_STATUS_LABELS[pkg.status], PACKAGE_STATUS_LABELS_EN[pkg.status])}
         </Text>
         <Text className={['text-[11px]', tone.text].join(' ')}>
           {pkg.weight.toFixed(2)} kg
@@ -134,7 +154,7 @@ function PackageCard({
                   className="flex-1 items-center justify-center rounded-lg border border-red-200 bg-red-50 py-2.5"
                 >
                   <Text className="text-[12.5px] font-semibold text-red-600">
-                    Refuser
+                    {t('Refuser', 'Refuse')}
                   </Text>
                 </Pressable>
                 <Pressable
@@ -143,7 +163,7 @@ function PackageCard({
                 >
                   <Ionicons name="camera-outline" size={16} color={colors.white} />
                   <Text className="text-[12.5px] font-semibold text-white">
-                    J'ai récupéré le colis
+                    {t("J'ai récupéré le colis", 'I received the package')}
                   </Text>
                 </Pressable>
               </>
@@ -154,7 +174,7 @@ function PackageCard({
               >
                 <Ionicons name="camera-outline" size={16} color={colors.white} />
                 <Text className="text-[12.5px] font-semibold text-white">
-                  J'ai livré le colis
+                  {t("J'ai livré le colis", 'I delivered the package')}
                 </Text>
               </Pressable>
             )}
@@ -173,6 +193,7 @@ function PackageCard({
  * la question devient un litige, pas un refus.
  */
 export default function GpPackagesScreen() {
+  const { t } = useAppLanguage();
   const goBack = useGoBack('/(app)/(tabs)/gp');
   const { isReady } = useRequireAuth('/(app)/gp/packages');
   const { data, isLoading, isError, refetch } = useGpPackages();
@@ -199,7 +220,7 @@ export default function GpPackagesScreen() {
   const takePhoto = async () => {
     const permission = await ImagePicker.requestCameraPermissionsAsync();
     if (!permission.granted) {
-      setSheetError("L'accès à l'appareil photo est nécessaire.");
+      setSheetError(t("L'accès à l'appareil photo est nécessaire.", 'Camera access is required.'));
       return;
     }
 
@@ -235,7 +256,7 @@ export default function GpPackagesScreen() {
     });
 
     if (!uploaded?.fileUrl) {
-      setSheetError("L'envoi de la photo a échoué. Réessayez.");
+      setSheetError(t("L'envoi de la photo a échoué. Réessayez.", 'Photo upload failed. Please try again.'));
       return;
     }
 
@@ -269,11 +290,11 @@ export default function GpPackagesScreen() {
           onPress={goBack}
           hitSlop={10}
           accessibilityRole="button"
-          accessibilityLabel="Retour"
+          accessibilityLabel={t('Retour', 'Back')}
         >
           <Ionicons name="arrow-back" size={22} color={colors.text} />
         </Pressable>
-        <Text className="flex-1 text-lg font-bold text-gray-900">Mes colis</Text>
+        <Text className="flex-1 text-lg font-bold text-gray-900">{t('Mes colis', 'My packages')}</Text>
       </View>
 
       {isLoading ? (
@@ -283,23 +304,26 @@ export default function GpPackagesScreen() {
       ) : isError ? (
         <EmptyState
           icon="cloud-offline-outline"
-          title="Chargement impossible"
-          description="Vérifiez votre connexion puis réessayez."
-          actionLabel="Réessayer"
+          title={t('Chargement impossible', 'Unable to load')}
+          description={t('Vérifiez votre connexion puis réessayez.', 'Check your connection and try again.')}
+          actionLabel={t('Réessayer', 'Try again')}
           onAction={() => void refetch()}
         />
       ) : !data || data.length === 0 ? (
         <EmptyState
           icon="cube-outline"
-          title="Aucun colis"
-          description="Les colis apparaîtront ici dès qu'un commerçant en aura déposé un pour l'un de vos trajets."
+          title={t('Aucun colis', 'No packages yet')}
+          description={t(
+            "Les colis apparaîtront ici dès qu'un commerçant en aura déposé un pour l'un de vos trajets.",
+            'Packages will appear here when a shop drops one off for one of your trips.',
+          )}
         />
       ) : (
         <ScrollView contentContainerClassName="py-3">
           {pending.length > 0 ? (
             <>
               <Text className="mb-2 px-3.5 text-[11px] font-bold uppercase tracking-wide text-gray-400">
-                En cours ({pending.length})
+                {t(`En cours (${pending.length})`, `In progress (${pending.length})`)}
               </Text>
               {pending.map((pkg) => (
                 <PackageCard
@@ -314,7 +338,7 @@ export default function GpPackagesScreen() {
           {others.length > 0 ? (
             <>
               <Text className="mb-2 mt-3 px-3.5 text-[11px] font-bold uppercase tracking-wide text-gray-400">
-                Historique
+                {t('Historique', 'History')}
               </Text>
               {others.map((pkg) => (
                 <PackageCard key={pkg.id} pkg={pkg} onAction={() => undefined} />
@@ -333,17 +357,17 @@ export default function GpPackagesScreen() {
         <View className="flex-1 justify-end bg-black/40">
           <View className="rounded-t-2xl bg-white p-5 pb-8">
             <Text className="text-[16px] font-bold text-gray-900">
-              {copy?.title}
+              {copy ? t(copy.title, copy.titleEn) : null}
             </Text>
             <Text className="mt-1.5 text-[12.5px] leading-[18px] text-gray-600">
-              {copy?.body}
+              {copy ? t(copy.body, copy.bodyEn) : null}
             </Text>
 
             {target?.action === 'refuse' ? (
               <View className="mt-4">
                 <Input
-                  label="Motif du refus"
-                  placeholder="Colis trop volumineux, contenu non conforme…"
+                  label={t('Motif du refus', 'Reason for refusal')}
+                  placeholder={t('Colis trop volumineux, contenu non conforme…', 'Package too large, contents do not match…')}
                   value={reason}
                   onChangeText={setReason}
                   multiline
@@ -366,7 +390,7 @@ export default function GpPackagesScreen() {
                   <>
                     <Ionicons name="camera-outline" size={26} color="#9CA3AF" />
                     <Text className="mt-1.5 text-[12px] text-gray-500">
-                      Prendre la photo
+                      {t('Prendre la photo', 'Take photo')}
                     </Text>
                   </>
                 )}
@@ -386,10 +410,10 @@ export default function GpPackagesScreen() {
                 loading={isUploading || act.isPending}
                 fullWidth
               >
-                {copy?.confirm ?? 'Confirmer'}
+                {copy ? t(copy.confirm, copy.confirmEn) : t('Confirmer', 'Confirm')}
               </Button>
               <Button variant="secondary" onPress={closeSheet} fullWidth>
-                Annuler
+                {t('Annuler', 'Cancel')}
               </Button>
             </View>
           </View>

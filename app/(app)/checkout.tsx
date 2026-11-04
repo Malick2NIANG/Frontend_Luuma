@@ -19,6 +19,7 @@ import { colors } from '@/constants/colors';
 import { useTrip } from '@/hooks/useCatalog';
 import { useConfirmOrder, useCreateOrder } from '@/hooks/useOrders';
 import { formatDate, formatEur, formatWeight } from '@/lib/format';
+import { useAppLanguage } from '@/lib/appLanguage';
 import {
   cartByMerchant,
   cartSubtotalEur,
@@ -30,6 +31,7 @@ import {
 const PLATFORM_FEE_PERCENT = 6;
 
 export default function CheckoutScreen() {
+  const { t } = useAppLanguage();
   const { tripId } = useLocalSearchParams<{ tripId: string }>();
   const router = useRouter();
   const goBack = useGoBack('/(app)/cart');
@@ -101,13 +103,13 @@ export default function CheckoutScreen() {
       <SafeAreaView className="flex-1 bg-white">
         <EmptyState
           icon="alert-circle-outline"
-          title="Commande impossible"
+          title={t('Commande impossible', 'Unable to place order')}
           description={
             items.length === 0
-              ? 'Votre panier est vide.'
-              : "Ce trajet n'est plus disponible."
+              ? t('Votre panier est vide.', 'Your cart is empty.')
+              : t("Ce trajet n'est plus disponible.", 'This trip is no longer available.')
           }
-          actionLabel="Retour au catalogue"
+          actionLabel={t('Retour au catalogue', 'Back to catalog')}
           onAction={() => router.replace('/(app)/(tabs)')}
         />
       </SafeAreaView>
@@ -120,12 +122,12 @@ export default function CheckoutScreen() {
         <Pressable
           onPress={goBack}
           accessibilityRole="button"
-          accessibilityLabel="Retour"
+          accessibilityLabel={t('Retour', 'Back')}
           className="h-10 w-10 items-center justify-center rounded-full bg-gray-100"
         >
           <Ionicons name="arrow-back" size={20} color={colors.text} />
         </Pressable>
-        <Text className="text-xl font-bold text-gray-900">Valider la commande</Text>
+        <Text className="text-xl font-bold text-gray-900">{t('Valider la commande', 'Checkout')}</Text>
       </View>
 
       <KeyboardAvoidingView
@@ -141,7 +143,7 @@ export default function CheckoutScreen() {
               </Text>
             </View>
             <Text className="mt-1 text-sm text-gray-500">
-              Départ le {formatDate(trip.departureDate)}
+              {t('Départ le', 'Departs on')} {formatDate(trip.departureDate)}
             </Text>
             <Text className="mt-1 text-sm text-gray-500">
               {formatWeight(totalWeight)} · {formatEur(trip.pricePerKg)}/kg
@@ -149,67 +151,72 @@ export default function CheckoutScreen() {
           </View>
 
           <Text className="mb-2 text-sm font-semibold text-gray-900">
-            Adresse de livraison
+            {t('Adresse de livraison', 'Delivery address')}
           </Text>
           <Input
-            label="Adresse"
+            label={t('Adresse', 'Address')}
             value={address}
             onChangeText={setAddress}
-            placeholder="12 rue des Lilas, appartement 3B"
-            error={touched && !addressValid ? 'Adresse trop courte.' : undefined}
+            placeholder={t('12 rue des Lilas, appartement 3B', '12 Lilac Street, apartment 3B')}
+            error={touched && !addressValid ? t('Adresse trop courte.', 'Address is too short.') : undefined}
           />
           <View className="flex-row gap-3">
             <View className="flex-1">
               <Input
-                label="Ville"
+                label={t('Ville', 'City')}
                 value={city}
                 onChangeText={setCity}
                 placeholder={trip.destCity}
-                error={touched && !cityValid ? 'Ville requise.' : undefined}
+                error={touched && !cityValid ? t('Ville requise.', 'City is required.') : undefined}
               />
             </View>
             <View className="w-24">
               <Input
-                label="Pays"
+                label={t('Pays', 'Country')}
                 value={country}
                 onChangeText={setCountry}
                 placeholder={trip.destCountry}
                 autoCapitalize="characters"
                 maxLength={2}
-                error={touched && !countryValid ? 'Code ISO.' : undefined}
+                error={touched && !countryValid ? t('Code ISO.', 'ISO code.') : undefined}
               />
             </View>
           </View>
 
           <View className="mt-4 rounded-2xl bg-gray-50 p-4">
             <Text className="mb-2 text-sm font-semibold text-gray-900">
-              Récapitulatif
+              {t('Récapitulatif', 'Summary')}
             </Text>
-            <SummaryRow label="Produits" value={formatEur(subtotalEur)} />
+            <SummaryRow label={t('Produits', 'Products')} value={formatEur(subtotalEur)} />
             <SummaryRow
-              label={`Transport (${formatWeight(totalWeight)})`}
+              label={t(`Transport (${formatWeight(totalWeight)})`, `Shipping (${formatWeight(totalWeight)})`)}
               value={formatEur(estimate.shipping)}
             />
             <SummaryRow
-              label={`Frais de service (${PLATFORM_FEE_PERCENT} %)`}
+              label={t(`Frais de service (${PLATFORM_FEE_PERCENT} %)`, `Service fee (${PLATFORM_FEE_PERCENT}%)`)}
               value={formatEur(estimate.fee)}
             />
             <View className="mt-2 flex-row justify-between border-t border-gray-200 pt-2">
-              <Text className="text-base font-semibold text-gray-900">Total</Text>
+              <Text className="text-base font-semibold text-gray-900">{t('Total', 'Total')}</Text>
               <Text className="text-base font-bold text-primary">
                 {formatEur(estimate.total)}
               </Text>
             </View>
             <Text className="mt-2 text-xs text-gray-500">
-              {groups.length} colis · Montant définitif calculé par le serveur.
+              {t(
+                `${groups.length} colis · Montant définitif calculé par le serveur.`,
+                `${groups.length} package(s) · Final amount calculated by the server.`,
+              )}
             </Text>
           </View>
 
           <View className="mt-4 flex-row items-start gap-2 rounded-xl bg-emerald-50 px-3 py-2.5">
             <Ionicons name="shield-checkmark-outline" size={17} color="#047857" />
             <Text className="flex-1 text-xs text-emerald-800">
-              Votre paiement est conservé sous séquestre et n'est versé au
-              commerçant et au GP qu'après confirmation de la livraison.
+              {t(
+                "Votre paiement est conservé sous séquestre et n'est versé au commerçant et au GP qu'après confirmation de la livraison.",
+                'Your payment is held in escrow and released to the shop and personal shopper only after delivery is confirmed.',
+              )}
             </Text>
           </View>
 
@@ -228,7 +235,7 @@ export default function CheckoutScreen() {
             disabled={!formValid}
             onPress={() => void handleSubmit()}
           >
-            Payer {formatEur(estimate.total)}
+            {t('Payer', 'Pay')} {formatEur(estimate.total)}
           </Button>
         </View>
       </KeyboardAvoidingView>
