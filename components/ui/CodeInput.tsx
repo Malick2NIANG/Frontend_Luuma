@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, type ComponentRef } from 'react';
 import { Pressable, Text, TextInput, View } from 'react-native';
 import { colors } from '@/constants/colors';
 import { useAppLanguage } from '@/lib/appLanguage';
@@ -32,7 +32,9 @@ export function CodeInput({
   editable = true,
 }: CodeInputProps) {
   const { t } = useAppLanguage();
-  const inputRef = useRef<TextInput>(null);
+  // Le type d'instance est demandé au composant : React Native 0.88 n'expose
+  // plus la classe TextInput comme type de référence.
+  const inputRef = useRef<ComponentRef<typeof TextInput>>(null);
   const digits = value.padEnd(CODE_LENGTH).split('').slice(0, CODE_LENGTH);
   const focusedIndex = Math.min(value.length, CODE_LENGTH - 1);
 

@@ -6,7 +6,6 @@ import {
   Platform,
   Pressable,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { BrandLogo } from '@/components/BrandLogo';
@@ -16,7 +15,7 @@ import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton';
 import { LanguageToggle } from '@/components/auth/LanguageToggle';
 import { Button } from '@/components/ui/Button';
 import { FormError } from '@/components/ui/FormError';
-import { Input } from '@/components/ui/Input';
+import { Input, type InputHandle } from '@/components/ui/Input';
 import { PhoneInput } from '@/components/ui/PhoneInput';
 import { Screen } from '@/components/ui/Screen';
 import { DEFAULT_COUNTRY_ISO, findCountry } from '@/constants/countries';
@@ -66,10 +65,10 @@ export default function RegisterScreen() {
    * email → mot de passe, et le numéro se saisit à la main — c'est le seul
    * maillon manquant, à reprendre si l'on touche un jour à ce composant.
    */
-  const lastNameRef = useRef<TextInput>(null);
-  const emailRef = useRef<TextInput>(null);
-  const passwordRef = useRef<TextInput>(null);
-  const confirmRef = useRef<TextInput>(null);
+  const lastNameRef = useRef<InputHandle>(null);
+  const emailRef = useRef<InputHandle>(null);
+  const passwordRef = useRef<InputHandle>(null);
+  const confirmRef = useRef<InputHandle>(null);
 
   /** Les erreurs n'apparaissent qu'après une première tentative. */
   const [submitted, setSubmitted] = useState(false);

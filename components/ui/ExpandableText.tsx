@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Pressable, Text, View, type TextLayoutEventData } from 'react-native';
+// `TextLayoutEventData` a été renommé `TextLayoutEvent` en React Native 0.88.
+import { Pressable, Text, View, type TextLayoutEvent } from 'react-native';
 import { useAppLanguage } from '@/lib/appLanguage';
 
 /**
@@ -40,9 +41,10 @@ export function ExpandableText({
   const [expanded, setExpanded] = useState(false);
   const [measuredLines, setMeasuredLines] = useState<number | null>(null);
 
-  const handleTextLayout = (event: {
-    nativeEvent: TextLayoutEventData;
-  }) => {
+  // `TextLayoutEvent` enveloppe déjà `nativeEvent` : l'objet était reconstruit
+  // à la main parce que seul `TextLayoutEventData` était exporté avant. React
+  // Native 0.88 n'expose plus que le type complet, qui dit mieux la même chose.
+  const handleTextLayout = (event: TextLayoutEvent) => {
     // Ne mesure qu'une fois, à l'état replié : déplié, le nombre de lignes
     // devient celui du texte entier et le bouton disparaîtrait aussitôt.
     if (measuredLines === null && !expanded) {

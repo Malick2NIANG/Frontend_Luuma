@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
-import { Text, View } from 'react-native';
+import { Text, View, type OpaqueColorValue } from 'react-native';
 import { colors } from '@/constants/colors';
 import { useAuth } from '@/hooks/useAuth';
 import { useConversations } from '@/hooks/useDirectChat';
@@ -79,7 +79,7 @@ export default function TabsLayout() {
             <Ionicons
               name={focused ? 'home' : 'home-outline'}
               size={size}
-              color={color}
+              color={iconColor(color)}
             />
           ),
         }}
@@ -92,7 +92,7 @@ export default function TabsLayout() {
             <Ionicons
               name={focused ? 'search' : 'search-outline'}
               size={size}
-              color={color}
+              color={iconColor(color)}
             />
           ),
         }}
@@ -106,7 +106,7 @@ export default function TabsLayout() {
             <Ionicons
               name={focused ? 'storefront' : 'storefront-outline'}
               size={size}
-              color={color}
+              color={iconColor(color)}
             />
           ),
         }}
@@ -120,7 +120,7 @@ export default function TabsLayout() {
             <Ionicons
               name={focused ? 'airplane' : 'airplane-outline'}
               size={size}
-              color={color}
+              color={iconColor(color)}
             />
           ),
         }}
@@ -134,7 +134,7 @@ export default function TabsLayout() {
               <Ionicons
                 name={focused ? 'chatbubble' : 'chatbubble-outline'}
                 size={size}
-                color={color}
+                color={iconColor(color)}
               />
               {unread > 0 && (
                 <View className="absolute -right-1.5 -top-1 h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1">
@@ -155,11 +155,36 @@ export default function TabsLayout() {
             <Ionicons
               name={focused ? 'person' : 'person-outline'}
               size={size}
-              color={color}
+              color={iconColor(color)}
             />
           ),
         }}
       />
     </Tabs>
   );
+}
+
+/**
+ * Couleur d'icône acceptable par Ionicons.
+ *
+ * `tabBarIcon` annonce désormais une couleur qui peut être un NOMBRE : sur
+ * Android, React Native résout parfois les couleurs en entier avant de les
+ * transmettre. Ionicons n'accepte que des chaînes ou une valeur de couleur
+ * native.
+ *
+ * On ÉCARTE ce cas plutôt que de le convertir : `String(4278190080)` n'est
+ * pas une couleur, et produirait une icône invisible au lieu d'une erreur.
+ * Sans couleur explicite, Ionicons retombe sur la sienne — dégradation
+ * discrète, jamais disparition.
+ *
+ * En pratique le cas ne se produit pas ici : les deux teintes sont déclarées
+ * en chaînes dans `screenOptions`. Mais le type dit qu'il peut arriver, et
+ * c'est le type qui fera foi au prochain changement de version.
+ */
+function iconColor(
+  color: string | number | OpaqueColorValue | null | undefined,
+) {
+  // `null` autant que `number` : le type interne de React Native pour une
+  // couleur d'onglet admet les deux, et Ionicons n'accepte ni l'un ni l'autre.
+  return typeof color === 'number' || color === null ? undefined : color;
 }

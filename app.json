@@ -6,11 +6,6 @@
     "orientation": "default",
     "icon": "./assets/Icon.png",
     "userInterfaceStyle": "light",
-    "splash": {
-      "image": "./assets/logo-mark.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#FFFFFF"
-    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "app.luuma.mobile",
@@ -54,6 +49,15 @@
         "expo-local-authentication",
         {
           "faceIDPermission": "Luuma utilise Face ID pour déverrouiller votre session."
+        }
+      ],
+      "expo-status-bar",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/logo-mark.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#FFFFFF"
         }
       ]
     ]

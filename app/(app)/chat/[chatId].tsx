@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ComponentRef } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useGoBack } from '@/hooks/useGoBack';
@@ -33,7 +33,7 @@ export default function ChatScreen() {
   const router = useRouter();
   const goBack = useGoBack('/(app)/(tabs)/messages');
   const { user } = useAuth();
-  const listRef = useRef<FlatList<ChatMessage>>(null);
+  const listRef = useRef<ComponentRef<typeof FlatList<ChatMessage>>>(null);
 
   const {
     messages,

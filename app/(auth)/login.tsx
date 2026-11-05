@@ -7,7 +7,6 @@ import {
   Platform,
   Pressable,
   Text,
-  TextInput,
   View,
 } from 'react-native';
 import { BrandLogo } from '@/components/BrandLogo';
@@ -17,7 +16,7 @@ import { LanguageToggle } from '@/components/auth/LanguageToggle';
 import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton';
 import { Button } from '@/components/ui/Button';
 import { FormError } from '@/components/ui/FormError';
-import { Input } from '@/components/ui/Input';
+import { Input, type InputHandle } from '@/components/ui/Input';
 import { Screen } from '@/components/ui/Screen';
 import { useLogin } from '@/hooks/useAuth';
 import { useAppLanguage } from '@/lib/appLanguage';
@@ -47,7 +46,7 @@ export default function LoginScreen() {
 
   // Permet à « Suivant » du clavier d'amener au mot de passe plutôt que
   // d'obliger à viser le champ du doigt.
-  const passwordRef = useRef<TextInput>(null);
+  const passwordRef = useRef<InputHandle>(null);
 
   /**
    * Quelle biométrie cet appareil propose-t-il réellement ?

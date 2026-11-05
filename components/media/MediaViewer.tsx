@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ComponentRef } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import {
   Modal,
@@ -41,7 +41,8 @@ export function MediaViewer({
 }: MediaViewerProps) {
   const { t } = useAppLanguage();
   const { width, height } = useWindowDimensions();
-  const scrollRef = useRef<ScrollView>(null);
+  // Même raison que pour TextInput : le type d'instance vient du composant.
+  const scrollRef = useRef<ComponentRef<typeof ScrollView>>(null);
 
   const [index, setIndex] = useState(initialIndex);
   const [zoomed, setZoomed] = useState(false);

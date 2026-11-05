@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { forwardRef, useState } from 'react';
+import { forwardRef, useState, type ComponentRef } from 'react';
 import { Pressable, Text, TextInput, View, type TextInputProps } from 'react-native';
 import { useAppLanguage } from '@/lib/appLanguage';
 
@@ -20,7 +20,21 @@ export interface InputProps extends TextInputProps {
  * première cause d'échec de connexion sur mobile, où le clavier bascule entre
  * majuscules, chiffres et symboles sans qu'on puisse vérifier.
  */
-export const Input = forwardRef<TextInput, InputProps>(function Input(
+/**
+ * Le type de la référence est DEMANDÉ au composant, il n'est plus supposé.
+ *
+ * `forwardRef<TextInput, …>` revenait à dire « la référence pointe sur une
+ * instance de la classe TextInput ». React Native 0.88 ne l'expose plus
+ * ainsi, et ce type ne porte plus `focus()` : le code compilait hier, et
+ * aurait cessé de compiler aujourd'hui.
+ *
+ * `ComponentRef<typeof TextInput>` interroge le composant sur ce qu'il
+ * expose réellement. Il restera juste quand l'implémentation changera
+ * encore — et elle changera.
+ */
+export type InputHandle = ComponentRef<typeof TextInput>;
+
+export const Input = forwardRef<InputHandle, InputProps>(function Input(
   {
     label,
     error,
