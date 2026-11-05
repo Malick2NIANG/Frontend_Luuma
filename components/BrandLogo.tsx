@@ -6,6 +6,8 @@ export interface BrandLogoProps {
   height: number;
   light?: boolean;
   onLoad?: () => void;
+  /** Indispensable à l'écran de lancement, qui attend l'un OU l'autre. */
+  onError?: () => void;
 }
 
 /**
@@ -23,6 +25,7 @@ export function BrandLogo({
   height,
   light = false,
   onLoad,
+  onError,
 }: BrandLogoProps) {
   return (
     <View>
@@ -31,6 +34,7 @@ export function BrandLogo({
         contentFit="contain"
         style={{ width, height, ...(light ? { tintColor: '#FFFFFF' } : {}) }}
         onLoad={onLoad}
+        onError={onError}
       />
     </View>
   );

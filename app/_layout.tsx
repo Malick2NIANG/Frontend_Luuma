@@ -13,10 +13,18 @@ import { queryClient } from '@/lib/queryClient';
 import { useAuthStore } from '@/store/auth.store';
 
 /**
- * Plancher court pour laisser l'animation de marque se poser sans ralentir
- * inutilement les lancements où la session est déjà disponible.
+ * Plancher d'affichage de l'écran de bienvenue.
+ *
+ * Il s'AJOUTE aux animations plutôt que de les contenir : 600 ms d'entrée de
+ * la marque, puis l'attente de ce plancher, puis 450 ms de disparition. À
+ * 1500 ms, le lancement demandait plus de deux secondes et demie même quand
+ * tout était prêt depuis longtemps.
+ *
+ * 1100 ms laisse l'animation se poser — elle dure 600 ms — tout en rendant la
+ * main plus tôt. Une seule constante à remonter si la cinématique paraît
+ * écourtée.
  */
-const MINIMUM_SPLASH_MS = 1500;
+const MINIMUM_SPLASH_MS = 1100;
 
 export default function RootLayout() {
   const isHydrated = useAuthStore((state) => state.isHydrated);

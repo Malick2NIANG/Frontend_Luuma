@@ -122,25 +122,45 @@ export const useAuthStore = create<AuthState>((set) => ({
       });
   },
 
+  /**
+   * La session part ; le RÉGLAGE biométrique reste.
+   *
+   * Il était effacé avec elle, obligeant à réactiver l'empreinte après chaque
+   * déconnexion — ce que ne fait aucune application. Le réglage dit « cet
+   * appareil peut déverrouiller par empreinte », pas « cette session-ci » :
+   * il survit donc à la déconnexion, comme le choix de langue.
+   *
+   * Le jeton, lui, est bien détruit : sans lui, l'empreinte ne déverrouille
+   * rien. `hasSavedSession` repasse à faux, ce qui masque le bouton jusqu'à
+   * la prochaine connexion.
+   */
   logout: (reason = 'user') => {
     set({
       user: null,
       token: null,
       isGuest: false,
       hasSavedSession: false,
-      biometricEnabled: false,
-      biometricPrompted: false,
       sessionEndReason: reason,
     });
-    Promise.all([
-      secureStorage.removeItem(AUTH_STORAGE_KEY),
-      secureStorage.removeItem(BIOMETRIC_ENABLED_KEY),
-      secureStorage.removeItem(BIOMETRIC_PROMPTED_KEY),
-    ]).catch((error: unknown) => {
-      console.error('Unable to clear the saved authentication settings:', error);
+    secureStorage.removeItem(AUTH_STORAGE_KEY).catch((error: unknown) => {
+      console.error('Unable to clear the saved authentication session:', error);
     });
   },
 
+  /**
+   * Restaure la session au démarrage.
+   *
+   * `isHydrated` est posé AVANT la demande biométrique, et c'est tout
+   * l'intérêt : l'écran de lancement attend ce drapeau pour s'effacer.
+   * Tant que la vérification se faisait d'abord, quelqu'un qui ignorait le
+   * prompt d'empreinte — ou dont le capteur ne répondait pas — restait sur
+   * l'écran de bienvenue, sans bouton, sans explication, indéfiniment.
+   *
+   * Désormais l'application s'ouvre sur la connexion pendant que le système
+   * demande l'empreinte. Si elle est validée, la session se pose et la garde
+   * emmène au fil ; sinon on reste sur un écran utilisable, où le bouton
+   * d'empreinte permet de réessayer.
+   */
   hydrate: async () => {
     try {
       const [raw, biometricFlag, promptedFlag] = await Promise.all([
@@ -149,28 +169,29 @@ export const useAuthStore = create<AuthState>((set) => ({
         secureStorage.getItem(BIOMETRIC_PROMPTED_KEY),
       ]);
       const biometricEnabled = biometricFlag === 'true';
+      const needsBiometrics =
+        Boolean(raw) && biometricEnabled && Platform.OS !== 'web';
+
       set({
         hasSavedSession: Boolean(raw),
         biometricEnabled,
         biometricPrompted: promptedFlag === 'true',
+        // L'application est utilisable immédiatement. Sans session restaurée,
+        // la garde affiche la connexion — jamais un écran figé.
+        isHydrated: true,
       });
 
-      if (raw) {
-        const stored = JSON.parse(raw) as StoredAuth;
-        if (biometricEnabled && Platform.OS !== 'web') {
-          const result = await authenticateForSession();
-          if (result !== 'success') {
-            set({ isHydrated: true });
-            return;
-          }
-        }
-        set({
-          user: stored.user,
-          token: stored.token,
-          isHydrated: true,
-        });
-        return;
+      if (!raw) return;
+
+      const stored = JSON.parse(raw) as StoredAuth;
+
+      if (needsBiometrics) {
+        const result = await authenticateForSession();
+        if (result !== 'success') return;
       }
+
+      set({ user: stored.user, token: stored.token });
+      return;
     } catch (error) {
       console.error('Unable to restore the saved authentication session:', error);
     }

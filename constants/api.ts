@@ -13,13 +13,36 @@ function getDevServerHost(): string | null {
   return host && host.length > 0 ? host : null;
 }
 
+/** `localhost`, `127.0.0.1` ou `[::1]` — la page est servie par cette machine. */
+function isLocalHost(hostname: string): boolean {
+  return (
+    hostname === 'localhost' ||
+    hostname === '127.0.0.1' ||
+    hostname === '[::1]' ||
+    hostname === '::1'
+  );
+}
+
 function resolveBaseUrl(): string {
-  // Sur le web, l'API se trouve forcément sur l'hôte qui sert la page : le
-  // navigateur et le serveur Metro tournent sur la même machine. Passer ici
-  // AVANT la variable d'environnement évite l'écueil classique en dev — une
-  // IP LAN figée dans .env pour tester au téléphone, puis devenue injoignable
-  // depuis le navigateur quand le réseau change.
   if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    // Servie depuis cette machine : l'API est forcément sur le même hôte.
+    // Déduire plutôt que lire la variable d'environnement évite l'écueil
+    // classique en développement — une IP LAN figée dans .env pour tester au
+    // téléphone, devenue injoignable depuis le navigateur quand le réseau
+    // change.
+    if (isLocalHost(window.location.hostname)) {
+      return `${window.location.protocol}//${window.location.hostname}:${API_PORT}`;
+    }
+
+    // Servie depuis AILLEURS — un tunnel, un hébergement, une démo partagée.
+    // La déduction ne vaut plus rien : un tunnel expose chaque port sur un
+    // domaine distinct, donc l'API n'est jamais « le même hôte, port 3001 ».
+    // La variable d'environnement redevient la seule source fiable.
+    const webUrl = process.env.EXPO_PUBLIC_API_URL;
+    if (webUrl) return webUrl;
+
+    // Sans variable, on tente quand même l'hôte courant : mieux vaut une
+    // erreur réseau explicite qu'une URL vide.
     return `${window.location.protocol}//${window.location.hostname}:${API_PORT}`;
   }
 

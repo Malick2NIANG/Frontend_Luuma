@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useState } from 'react';
+import { forwardRef, useState } from 'react';
 import { Pressable, Text, TextInput, View, type TextInputProps } from 'react-native';
 import { useAppLanguage } from '@/lib/appLanguage';
 
@@ -7,6 +7,8 @@ export interface InputProps extends TextInputProps {
   label?: string;
   error?: string;
   appearance?: 'default' | 'light';
+  /** Indication affichée sous le champ tant qu'aucune erreur ne s'affiche. */
+  hint?: string;
 }
 
 /**
@@ -18,13 +20,20 @@ export interface InputProps extends TextInputProps {
  * première cause d'échec de connexion sur mobile, où le clavier bascule entre
  * majuscules, chiffres et symboles sans qu'on puisse vérifier.
  */
-export function Input({
-  label,
-  error,
-  appearance = 'default',
-  className,
-  ...textInputProps
-}: InputProps) {
+export const Input = forwardRef<TextInput, InputProps>(function Input(
+  {
+    label,
+    error,
+    hint,
+    appearance = 'default',
+    className,
+    ...textInputProps
+  },
+  // La référence est transmise au TextInput sous-jacent : sans elle, aucun
+  // écran ne peut donner le focus au champ suivant quand on appuie sur
+  // « Suivant » au clavier, et chaque champ doit être touché à la main.
+  ref,
+) {
   const { t } = useAppLanguage();
   const isPassword = textInputProps.secureTextEntry === true;
   const isLight = appearance === 'light';
@@ -45,7 +54,8 @@ export function Input({
 
       <View className="relative w-full justify-center">
         <TextInput
-          placeholderTextColor={isLight ? '#FFFFFF' : '#9CA3AF'}
+          ref={ref}
+          placeholderTextColor={isLight ? 'rgba(255,255,255,0.75)' : '#9CA3AF'}
           className={[
             'w-full rounded-xl border px-4 py-3 text-base focus:outline-none',
             isLight
@@ -95,16 +105,40 @@ export function Input({
         ) : null}
       </View>
 
+      {/* Sur fond photo, l'erreur s'affichait en blanc — exactement la
+          couleur du label, du placeholder et du texte saisi. Le seul message
+          que la personne cherche se fondait dans le décor. Rouge clair,
+          semi-gras, précédé d'un pictogramme : trois signaux plutôt qu'un,
+          parce qu'aucune couleur seule n'est garantie lisible au-dessus
+          d'une image qui change. */}
       {error ? (
+        <View className="mt-1 flex-row items-center gap-1">
+          {isLight ? (
+            <Ionicons name="alert-circle" size={13} color="#FFD1D1" />
+          ) : null}
+          <Text
+            className={[
+              'flex-1 text-xs',
+              isLight ? 'font-semibold' : '',
+            ].join(' ')}
+            style={isLight ? { color: '#FFD1D1' } : { color: '#EF4444' }}
+          >
+            {error}
+          </Text>
+        </View>
+      ) : hint ? (
+        /* L'indication cède la place à l'erreur plutôt que de s'y ajouter :
+           deux messages sous un même champ se contredisent à l'œil, et c'est
+           l'erreur qui doit être lue. */
         <Text
           className={[
             'mt-1 text-xs',
-            isLight ? 'text-white' : 'text-red-500',
+            isLight ? 'text-white/80' : 'text-gray-500',
           ].join(' ')}
         >
-          {error}
+          {hint}
         </Text>
       ) : null}
     </View>
   );
-}
+});

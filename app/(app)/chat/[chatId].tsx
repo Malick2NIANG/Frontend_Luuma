@@ -170,9 +170,13 @@ export default function ChatScreen() {
                   : (conversation?.counterpartRole
                       ? t(
                           ROLE_LABELS[conversation.counterpartRole],
-                          conversation.counterpartRole === 'MERCHANT'
+                          // `counterpartRole` vaut 'merchant' | 'gp' en
+                          // minuscules (types/chat.types.ts) : comparé aux
+                          // majuscules, aucune branche ne correspondait et
+                          // tout interlocuteur s'affichait « Customer ».
+                          conversation.counterpartRole === 'merchant'
                             ? 'Shop'
-                            : conversation.counterpartRole === 'GP'
+                            : conversation.counterpartRole === 'gp'
                               ? 'Personal shopper'
                               : 'Customer',
                         )

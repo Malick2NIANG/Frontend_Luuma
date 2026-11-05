@@ -29,6 +29,19 @@ const LOGO_ASPECT_RATIO = 254 / 179;
 const ENTRANCE_MS = 420;
 const EXIT_MS = 450;
 
+/**
+ * Délai au-delà duquel on considère le logo comme affiché, quoi qu'en dise
+ * `onLoad`.
+ *
+ * Toute la sortie de cet écran dépendait de ce rappel : s'il ne se
+ * déclenchait pas — image illisible, erreur de décodage, cas limite
+ * d'`expo-image` — l'écran de bienvenue restait affiché POUR TOUJOURS et
+ * l'application devenait inaccessible, sans autre issue que de la forcer à
+ * se fermer. Un écran de lancement ne doit jamais pouvoir retenir
+ * l'application : il s'efface, avec ou sans son animation.
+ */
+const BRAND_LOAD_FALLBACK_MS = 1200;
+
 export interface WelcomeScreenProps {
   ready: boolean;
   onDismissed: () => void;
@@ -50,6 +63,13 @@ export function WelcomeScreen({ ready, onDismissed }: WelcomeScreenProps) {
       easing: Easing.out(Easing.quad),
     });
   }, [opacity]);
+
+  // Filet : si `onLoad` n'arrive pas, on avance quand même.
+  useEffect(() => {
+    if (brandLoaded) return;
+    const timer = setTimeout(() => setBrandLoaded(true), BRAND_LOAD_FALLBACK_MS);
+    return () => clearTimeout(timer);
+  }, [brandLoaded]);
 
   useEffect(() => {
     if (!brandLoaded) return;
@@ -134,6 +154,9 @@ export function WelcomeScreen({ ready, onDismissed }: WelcomeScreenProps) {
             width={logoWidth}
             height={logoHeight}
             onLoad={() => setBrandLoaded(true)}
+            // Une image qui échoue ne doit pas retenir l'écran : on poursuit
+            // sans elle plutôt que d'attendre un rappel qui ne viendra pas.
+            onError={() => setBrandLoaded(true)}
           />
           <View style={{ alignItems: 'center', marginTop: 16 }}>
             <Text

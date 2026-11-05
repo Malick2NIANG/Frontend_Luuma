@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
@@ -128,7 +128,9 @@ function newDraftVariant(): DraftVariant {
   };
 }
 
-function SectionTitle({ children }: { children: string }) {
+// `children: string` cassait dès qu'un appel contenait du texte ET une
+// expression — JSX passe alors un tableau. `ReactNode` accepte les deux.
+function SectionTitle({ children }: { children: ReactNode }) {
   return (
     <Text className="mb-2 mt-6 text-[11px] font-bold uppercase tracking-wide text-gray-400">
       {children}
@@ -602,7 +604,7 @@ export default function NewProductScreen() {
 
           {kind === 'VARIANT' ? (
             <>
-              <SectionTitle>              {t('Déclinaisons', 'Variants')}</SectionTitle>
+              <SectionTitle>{t('Déclinaisons', 'Variants')}</SectionTitle>
               <Text className="mb-3 text-[11px] leading-4 text-gray-500">
                 {t(
                   "Chaque taille ou couleur a son propre poids : c'est lui qui est réservé sur la valise du GP. Vous pourrez en ajouter d'autres plus tard.",

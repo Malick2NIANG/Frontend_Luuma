@@ -32,6 +32,28 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+
+  /**
+   * Traverse la page d'avertissement des tunnels de développement.
+   *
+   * Un tunnel `*.devtunnels.ms` intercepte le PREMIER accès à chaque domaine
+   * pour afficher un avertissement anti-hameçonnage, et renvoie cette page
+   * HTML à la place de la réponse demandée. Pour un appel d'API, le résultat
+   * est une réponse 200 contenant du HTML là où le code attend du JSON :
+   * l'application affiche des écrans vides, sans aucune erreur réseau à
+   * laquelle se raccrocher.
+   *
+   * Microsoft prévoit cet en-tête pour les appels programmatiques. Sans lui,
+   * chaque personne invitée devrait d'abord ouvrir l'URL de l'API dans son
+   * navigateur et cliquer « Continuer » avant que l'application fonctionne.
+   *
+   * Inoffensif ailleurs : un en-tête inconnu est ignoré par tout autre
+   * serveur. Il ne part que vers un domaine de tunnel.
+   */
+  if (BASE_URL.includes('devtunnels.ms')) {
+    config.headers['X-Tunnel-Skip-AntiPhishing-Page'] = 'true';
+  }
+
   return config;
 });
 

@@ -3,6 +3,23 @@ import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { useAppLanguage } from '@/lib/appLanguage';
 
+/**
+ * Connexion Google — annoncée, pas encore opérationnelle.
+ *
+ * Le bouton avait l'apparence exacte d'une option disponible : on cliquait,
+ * et un message expliquait que ce n'était pas branché. Quelqu'un qui tente
+ * trois fois pense que l'application est cassée, pas qu'une fonctionnalité
+ * arrive.
+ *
+ * Il est donc désormais visiblement indisponible AVANT le clic — opacité
+ * réduite, mention « Bientôt », `accessibilityState.disabled` pour les
+ * lecteurs d'écran. La promesse reste affichée, ce qui a une valeur pour qui
+ * cherche cette option, mais elle ne se fait plus passer pour un chemin
+ * ouvert.
+ *
+ * À remplacer par un vrai `onPress` le jour où GOOGLE_CLIENT_ID est renseigné
+ * et où l'écran de complétion (téléphone, conditions) existe.
+ */
 export function GoogleSignInButton({ light = false }: { light?: boolean }) {
   const [showSetupMessage, setShowSetupMessage] = useState(false);
   const { t } = useAppLanguage();
@@ -19,7 +36,12 @@ export function GoogleSignInButton({ light = false }: { light?: boolean }) {
       <Pressable
         onPress={() => setShowSetupMessage(true)}
         accessibilityRole="button"
-        accessibilityLabel={t('Continuer avec Google', 'Continue with Google')}
+        accessibilityState={{ disabled: true }}
+        accessibilityLabel={t(
+          'Continuer avec Google — bientôt disponible',
+          'Continue with Google — coming soon',
+        )}
+        style={{ opacity: 0.55 }}
         className={[
           'w-full flex-row items-center justify-center gap-2 rounded-xl border py-3',
           light
@@ -41,6 +63,23 @@ export function GoogleSignInButton({ light = false }: { light?: boolean }) {
         >
           {t('Continuer avec Google', 'Continue with Google')}
         </Text>
+        <View
+          className="rounded-full px-2 py-0.5"
+          style={{
+            backgroundColor: light
+              ? 'rgba(255,255,255,0.25)'
+              : 'rgba(0,0,0,0.06)',
+          }}
+        >
+          <Text
+            className={[
+              'text-[10px] font-bold uppercase tracking-wide',
+              light ? 'text-white' : 'text-gray-600',
+            ].join(' ')}
+          >
+            {t('Bientôt', 'Soon')}
+          </Text>
+        </View>
       </Pressable>
       {showSetupMessage ? (
         <Text

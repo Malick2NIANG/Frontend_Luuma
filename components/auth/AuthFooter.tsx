@@ -15,7 +15,24 @@ import { colors } from '@/constants/colors';
 import { useAppLanguage } from '@/lib/appLanguage';
 
 const SUPPORT_EMAIL = 'luum221.contact@gmail.com';
-const SUPPORT_PHONE = '+221775278980';
+
+/**
+ * Une seule source pour le numéro.
+ *
+ * Il existait en deux exemplaires : `+221775278980` pour le lien `tel:`, et
+ * « +221 77 527 89 80 » écrit à la main pour l'affichage. Deux écritures du
+ * même fait finissent toujours par diverger, et celle qui se voit n'est pas
+ * celle qui appelle — on afficherait un numéro juste qui composerait un
+ * ancien.
+ */
+const SUPPORT_PHONE_E164 = '+221775278980';
+
+/** « +221 77 527 89 80 » — dérivé, jamais ressaisi. */
+const SUPPORT_PHONE_DISPLAY = SUPPORT_PHONE_E164.replace(
+  /^(\+\d{3})(\d{2})(\d{3})(\d{2})(\d{2})$/,
+  '$1 $2 $3 $4 $5',
+);
+
 const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
 
 export function AuthFooter({ light = false }: { light?: boolean }) {
@@ -179,7 +196,7 @@ export function AuthFooter({ light = false }: { light?: boolean }) {
               <Ionicons name="open-outline" size={16} color={colors.primary} />
             </Pressable>
             <Pressable
-              onPress={() => void handleSupportLink(`tel:${SUPPORT_PHONE}`)}
+              onPress={() => void handleSupportLink(`tel:${SUPPORT_PHONE_E164}`)}
               accessibilityRole="link"
               accessibilityLabel={t('Appeler le support', 'Call support')}
               className={[
@@ -193,7 +210,7 @@ export function AuthFooter({ light = false }: { light?: boolean }) {
                   {t('Téléphone', 'Phone')}
                 </Text>
                 <Text style={{ color: colors.primary }} className="text-xs">
-                  +221 77 527 89 80
+                  {SUPPORT_PHONE_DISPLAY}
                 </Text>
               </View>
               <Ionicons name="open-outline" size={16} color={colors.primary} />

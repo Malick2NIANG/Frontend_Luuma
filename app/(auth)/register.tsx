@@ -1,11 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Link, useLocalSearchParams, useRouter } from 'expo-router';
-import { useState } from 'react';
+import { Link, useLocalSearchParams } from 'expo-router';
+import { useEffect, useRef, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import { BrandLogo } from '@/components/BrandLogo';
@@ -14,6 +15,7 @@ import { AuthFooter } from '@/components/auth/AuthFooter';
 import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton';
 import { LanguageToggle } from '@/components/auth/LanguageToggle';
 import { Button } from '@/components/ui/Button';
+import { FormError } from '@/components/ui/FormError';
 import { Input } from '@/components/ui/Input';
 import { PhoneInput } from '@/components/ui/PhoneInput';
 import { Screen } from '@/components/ui/Screen';
@@ -27,7 +29,6 @@ import {
   toE164,
 } from '@/lib/validators';
 import { useAppLanguage } from '@/lib/appLanguage';
-import { useAuthStore } from '@/store/auth.store';
 
 interface FormErrors {
   firstName?: string;
@@ -40,14 +41,12 @@ interface FormErrors {
 
 export default function RegisterScreen() {
   const { returnTo } = useLocalSearchParams<{ returnTo?: string }>();
-  const router = useRouter();
   const { t } = useAppLanguage();
   const register = useRegister();
   // Jamais `router.back()` en direct : arrivé par lien, par notification ou
   // après un rechargement de page, l'historique est vide et l'action échoue
   // en silence — la flèche est là, elle ne fait rien.
   const goBack = useGoBack('/login');
-  const continueAsGuest = useAuthStore((state) => state.continueAsGuest);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
@@ -57,7 +56,25 @@ export default function RegisterScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [errors, setErrors] = useState<FormErrors>({});
 
-  const validate = (): boolean => {
+  /**
+   * Sept champs, et aucun enchaînement : il fallait viser chacun du doigt.
+   * « Suivant » descend maintenant le formulaire jusqu'au bout, où la touche
+   * de validation soumet directement.
+   *
+   * Le téléphone manque à cette chaîne : `PhoneInput` enveloppe son champ
+   * avec un sélecteur de pays et n'expose pas de référence. On enchaîne donc
+   * email → mot de passe, et le numéro se saisit à la main — c'est le seul
+   * maillon manquant, à reprendre si l'on touche un jour à ce composant.
+   */
+  const lastNameRef = useRef<TextInput>(null);
+  const emailRef = useRef<TextInput>(null);
+  const passwordRef = useRef<TextInput>(null);
+  const confirmRef = useRef<TextInput>(null);
+
+  /** Les erreurs n'apparaissent qu'après une première tentative. */
+  const [submitted, setSubmitted] = useState(false);
+
+  const computeErrors = (): FormErrors => {
     const nextErrors: FormErrors = {};
 
     if (!firstName.trim()) {
@@ -96,12 +113,32 @@ export default function RegisterScreen() {
       );
     }
 
-    setErrors(nextErrors);
-    return Object.keys(nextErrors).length === 0;
+    return nextErrors;
   };
 
+  // Après la première tentative, les erreurs suivent la saisie : sans cela,
+  // on corrigeait un champ sans que le message disparaisse, et sept erreurs
+  // affichées d'un coup restaient affichées jusqu'au prochain appui.
+  useEffect(() => {
+    if (!submitted) return;
+    setErrors(computeErrors());
+  }, [
+    submitted,
+    firstName,
+    lastName,
+    email,
+    phone,
+    countryIso,
+    password,
+    confirmPassword,
+    t,
+  ]);
+
   const handleSubmit = () => {
-    if (!validate()) return;
+    setSubmitted(true);
+    const nextErrors = computeErrors();
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) return;
 
     const first = firstName.trim();
     const last = lastName.trim();
@@ -128,15 +165,22 @@ export default function RegisterScreen() {
       <Screen scroll contentMaxWidth={520} transparent style={{ zIndex: 1 }}>
         {/* Flèche de retour explicite : l'écran est atteint depuis la
             connexion, et le geste de retour n'existe pas sur le web. */}
-        <Pressable
-          onPress={goBack}
-          hitSlop={10}
-          accessibilityRole="button"
-          accessibilityLabel={t('Retour', 'Back')}
-          className="self-start py-1"
-        >
-          <Ionicons name="arrow-back" size={22} color="#FFFFFF" />
-        </Pressable>
+        {/* Retour à gauche, langue à droite : le sélecteur était tout en bas,
+            après « Découvrir sans compte ». Quelqu'un qui ne lit pas le
+            français devait traverser un formulaire entier en français pour
+            trouver comment en changer. */}
+        <View className="w-full flex-row items-center justify-between">
+          <Pressable
+            onPress={goBack}
+            hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel={t('Retour', 'Back')}
+            className="py-1"
+          >
+            <Ionicons name="arrow-back" size={22} color="#FFFFFF" />
+          </Pressable>
+          <LanguageToggle light />
+        </View>
 
         <View className="flex-1 justify-center gap-5 pb-6">
           <View className="items-center gap-4">
@@ -169,10 +213,14 @@ export default function RegisterScreen() {
                   value={firstName}
                   onChangeText={setFirstName}
                   error={errors.firstName}
+                  returnKeyType="next"
+                  blurOnSubmit={false}
+                  onSubmitEditing={() => lastNameRef.current?.focus()}
                 />
               </View>
               <View className="flex-1">
                 <Input
+                  ref={lastNameRef}
                   label={t('Nom', 'Last name')}
                   appearance="light"
                   placeholder="Diop"
@@ -181,10 +229,14 @@ export default function RegisterScreen() {
                   value={lastName}
                   onChangeText={setLastName}
                   error={errors.lastName}
+                  returnKeyType="next"
+                  blurOnSubmit={false}
+                  onSubmitEditing={() => emailRef.current?.focus()}
                 />
               </View>
             </View>
             <Input
+              ref={emailRef}
               label="Email"
               appearance="light"
               placeholder={t('vous@exemple.com', 'you@example.com')}
@@ -194,6 +246,9 @@ export default function RegisterScreen() {
               value={email}
               onChangeText={setEmail}
               error={errors.email}
+              returnKeyType="next"
+              blurOnSubmit={false}
+              onSubmitEditing={() => passwordRef.current?.focus()}
             />
             <PhoneInput
               countryIso={countryIso}
@@ -204,6 +259,7 @@ export default function RegisterScreen() {
               error={errors.phone}
             />
             <Input
+              ref={passwordRef}
               label={t('Mot de passe', 'Password')}
               appearance="light"
               placeholder="••••••••"
@@ -213,8 +269,18 @@ export default function RegisterScreen() {
               value={password}
               onChangeText={setPassword}
               error={errors.password}
+              // La règle était annoncée APRÈS l'échec : on l'apprenait en la
+              // violant. Elle est désormais visible pendant la saisie.
+              hint={t(
+                `${PASSWORD_MIN_LENGTH} caractères minimum`,
+                `At least ${PASSWORD_MIN_LENGTH} characters`,
+              )}
+              returnKeyType="next"
+              blurOnSubmit={false}
+              onSubmitEditing={() => confirmRef.current?.focus()}
             />
             <Input
+              ref={confirmRef}
               label={t('Confirmer le mot de passe', 'Confirm password')}
               appearance="light"
               placeholder="••••••••"
@@ -223,6 +289,8 @@ export default function RegisterScreen() {
               value={confirmPassword}
               onChangeText={setConfirmPassword}
               error={errors.confirmPassword}
+              returnKeyType="go"
+              onSubmitEditing={handleSubmit}
             />
 
             {/* Mention passive, sans case à cocher.
@@ -253,9 +321,7 @@ export default function RegisterScreen() {
             </Text>
 
             {register.errorMessage ? (
-              <Text className="text-center text-sm text-white">
-                {register.errorMessage}
-              </Text>
+              <FormError message={register.errorMessage} light />
             ) : null}
 
             <Button
@@ -284,26 +350,9 @@ export default function RegisterScreen() {
             </Link>
           </View>
 
-          <View className="items-center">
-            <Pressable
-              onPress={() => {
-                continueAsGuest();
-                router.replace('/(app)/(tabs)');
-              }}
-              accessibilityRole="button"
-              accessibilityLabel={t(
-                'Découvrir Luuma sans créer de compte',
-                'Explore Luuma without creating an account',
-              )}
-              className="flex-row items-center gap-1 py-1"
-            >
-              <Text className="text-xs font-medium text-white">
-                {t('Découvrir sans compte', 'Explore without an account')}
-              </Text>
-              <Ionicons name="arrow-forward" size={13} color="#FFFFFF" />
-            </Pressable>
-          </View>
-          <LanguageToggle light />
+          {/* « Découvrir sans compte » retiré ici aussi. Le sélecteur de
+              langue est déjà en haut, à côté de la flèche de retour : en
+              afficher un second ici ne ferait que dédoubler le réglage. */}
         </View>
         <AuthFooter light />
       </Screen>
