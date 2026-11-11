@@ -30,6 +30,11 @@ export default function MessagesScreen() {
   if (!isAuthenticated) {
     return (
       <SafeAreaView className="flex-1 bg-white" edges={['top']}>
+        {/* Même en-tête que l'écran connecté : toucher « Messages » doit
+            ressembler à l'onglet, pas basculer vers un écran sans titre. */}
+        <View className="flex-row items-center border-b border-gray-100 px-4 pb-2.5 pt-1">
+          <Text className="text-lg font-bold text-gray-900">{t('Messages', 'Messages')}</Text>
+        </View>
         <AuthPrompt
           icon="chatbubbles-outline"
           title={t('Parlez à vos vendeurs et à vos GP', 'Talk to your sellers and travelers')}

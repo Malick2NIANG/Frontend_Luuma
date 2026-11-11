@@ -293,11 +293,12 @@ export default function LoginScreen() {
                 </Link>
               </View>
 
-              {/* « Découvrir sans compte » occupait cette place.
-                  Le mécanisme de visite (`continueAsGuest`, `isGuest`, les
-                  gardes qui s'y réfèrent) reste en place côté code : seule
-                  l'entrée qui permettait de le déclencher a été retirée.
-                  Remettre un bouton ici suffirait à le réactiver. */}
+              {/* Plus de bouton « Découvrir sans compte » : il n'a plus
+                  d'objet. L'application s'ouvre désormais SUR le fil, et cet
+                  écran n'est atteint que lorsqu'on choisit de se connecter,
+                  ou qu'une action l'exige — commander, écrire à un vendeur,
+                  ouvrir une boutique. La visite n'est plus une dérogation à
+                  demander, c'est l'état par défaut. */}
               <View className="items-center">
                 <LanguageToggle light />
               </View>

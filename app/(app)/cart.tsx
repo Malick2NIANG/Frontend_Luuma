@@ -2,12 +2,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useGoBack } from '@/hooks/useGoBack';
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { colors } from '@/constants/colors';
-import { useRequireAuth } from '@/hooks/useRequireAuth';
 import { formatEur, formatWeight, formatXof } from '@/lib/format';
 import { useAppLanguage } from '@/lib/appLanguage';
 import {
@@ -22,8 +21,17 @@ export default function CartScreen() {
   const { t } = useAppLanguage();
   const router = useRouter();
   const goBack = useGoBack('/(app)/(tabs)');
-  // Le panier engage : on demande le compte ici, pas à l'entrée de l'app.
-  const { isReady } = useRequireAuth('/(app)/cart');
+  /*
+   * PAS de `useRequireAuth` ici, et c'est délibéré.
+   *
+   * Le panier est ouvert aux visiteurs. Un panier rempli est un engagement
+   * déjà pris : réclamer un compte à cet instant ferait abandonner trois
+   * articles pour éviter un formulaire. Le seuil est le paiement, un écran
+   * plus loin, où la demande se comprend d'elle-même.
+   *
+   * Le panier est persisté sur l'appareil et survit à la connexion : ce que
+   * le visiteur a choisi se retrouve intact une fois son compte créé.
+   */
   const items = useCartStore((s) => s.items);
   const setQuantity = useCartStore((s) => s.setQuantity);
   const remove = useCartStore((s) => s.remove);
@@ -32,16 +40,6 @@ export default function CartScreen() {
   const groups = cartByMerchant(items);
   const totalWeight = cartTotalWeight(items);
   const subtotalEur = cartSubtotalEur(items);
-
-  // Écran blanc pendant l'hydratation puis la redirection éventuelle : afficher
-  // le panier une fraction de seconde avant d'éjecter serait déroutant.
-  if (!isReady) {
-    return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-white">
-        <ActivityIndicator size="large" color={colors.primary} />
-      </SafeAreaView>
-    );
-  }
 
   if (items.length === 0) {
     return (

@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useGoBack } from '@/hooks/useGoBack';
+import { useRequireAuth } from '@/hooks/useRequireAuth';
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -35,6 +36,21 @@ export default function CheckoutScreen() {
   const { tripId } = useLocalSearchParams<{ tripId: string }>();
   const router = useRouter();
   const goBack = useGoBack('/(app)/cart');
+
+  /**
+   * LE SEUIL EST ICI, et nulle part avant.
+   *
+   * Parcourir, consulter, remplir son panier : tout cela se fait sans
+   * compte, comme dans n'importe quelle place de marché. Commander, non — il
+   * faut une adresse, un moyen de recontacter la personne, et une trace de
+   * qui s'engage.
+   *
+   * `returnTo` ramène ici avec le `tripId`, donc le panier et le GP choisi
+   * sont retrouvés intacts après la connexion ou l'inscription.
+   */
+  const { isReady } = useRequireAuth(
+    tripId ? `/(app)/checkout?tripId=${tripId}` : '/(app)/cart',
+  );
 
   const items = useCartStore((s) => s.items);
   const { data: trip, isLoading } = useTrip(tripId);
@@ -90,7 +106,9 @@ export default function CheckoutScreen() {
     router.replace(`/(app)/orders/${confirmed.id}`);
   };
 
-  if (isLoading) {
+  // Attendre la redirection plutôt que de montrer un formulaire d'adresse à
+  // quelqu'un qu'on s'apprête à envoyer vers la connexion.
+  if (!isReady || isLoading) {
     return (
       <SafeAreaView className="flex-1 items-center justify-center bg-white">
         <ActivityIndicator size="large" color={colors.primary} />

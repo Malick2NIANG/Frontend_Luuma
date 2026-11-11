@@ -346,10 +346,11 @@ export default function ProductDetailScreen() {
         </View>
 
         <Pressable
-          onPress={() => {
-            if (!requireAuth(`/(app)/products/${product.id}`)) return;
-            setSheetOpen(true);
-          }}
+          // Remplir le panier ne demande pas de compte — c'est le paiement
+          // qui le fait, dans checkout.tsx. `requireAuth` ici bloquait un
+          // visiteur avant même la page de commande, à l'encontre du modèle
+          // de place de marché ouverte.
+          onPress={() => setSheetOpen(true)}
           accessibilityRole="button"
           className="flex-row items-center gap-1.5 rounded-xl bg-primary px-6 py-3.5"
         >

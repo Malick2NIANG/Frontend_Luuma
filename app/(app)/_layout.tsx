@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Redirect, Stack, usePathname } from 'expo-router';
+import { Stack } from 'expo-router';
 import { Pressable, Text, View } from 'react-native';
 import { EmailVerificationGate } from '@/components/auth/EmailVerificationGate';
 import { TermsGate } from '@/components/legal/TermsGate';
@@ -7,58 +7,39 @@ import { Button } from '@/components/ui/Button';
 import { colors } from '@/constants/colors';
 import { useAuth, useLogout } from '@/hooks/useAuth';
 import { useMe } from '@/hooks/useMe';
-import { useAuthStore } from '@/store/auth.store';
 
 /**
- * Garde de session — UNIQUE point de redirection vers la connexion — et les
- * deux écrans bloquants qui suivent l'entrée dans un compte.
+ * Entrée de l'application, et les deux écrans bloquants qui suivent l'entrée
+ * dans un compte.
  *
- * Pourquoi un seul point de redirection : lorsqu'une session tombe — un 401
- * intercepté dans `lib/api.ts` vide le magasin — TOUS les écrans montés se
- * re-rendent dans le même cycle. Avec une garde sur les onglets ET un
- * `router.replace` dans `useRequireAuth` sur chaque écran empilé au-dessus,
- * deux navigations partaient vers la même destination dans le même lot
- * d'effets. La seconde arrivait sur un navigateur déjà transitionné, d'où
- * « The action 'GO_BACK' was not handled by any navigator » — un avertissement
- * déclenché par un effet, jamais par un appui, ce qui rendait la trace
- * déroutante.
+ * CETTE GARDE NE REDIRIGE PLUS VERS LA CONNEXION. C'est le changement de
+ * modèle : l'application s'ouvrait sur le formulaire de connexion, comme un
+ * réseau social dont le contenu appartient aux membres. Luuma est une place
+ * de marché — on y entre comme dans une boutique. Le catalogue est ouvert, et
+ * le compte n'est réclamé qu'au moment de payer.
  *
- * Pourquoi les deux écrans bloquants sont ICI, et dans CET ordre : leur
- * séquence est une décision produit, elle doit se lire en un coup d'œil plutôt
- * que se déduire de l'endroit où chacun a été monté.
+ * Une session absente n'est donc plus une anomalie à corriger par une
+ * redirection, mais un état de visite parfaitement normal. Ce sont les écrans
+ * qui engagent — panier, paiement, messages, espaces professionnels — qui se
+ * gardent eux-mêmes par `useRequireAuth`, chacun sachant où ramener la
+ * personne ensuite.
+ *
+ * Effet de bord heureux : la classe de bogues « GO_BACK not handled » qui
+ * venait de deux redirections concurrentes disparaît d'elle-même, puisqu'il
+ * n'y a plus qu'un seul acteur capable de rediriger, et qu'il ne se déclenche
+ * que sur l'écran visible.
  */
 export default function AppLayout() {
-  const { isAuthenticated, isHydrated, isGuest } = useAuth();
-  const sessionEndReason = useAuthStore((state) => state.sessionEndReason);
+  const { isAuthenticated, isHydrated } = useAuth();
   const { me, isError: meFailed, refetch: retryMe, isFetching } = useMe();
   const logout = useLogout();
-  const pathname = usePathname();
 
   // Tant que le jeton n'a pas été relu depuis le stockage sécurisé, on ne sait
-  // pas si la session existe. Rediriger maintenant éjecterait quelqu'un qui
-  // est déjà connecté — le défaut classique d'une garde posée trop tôt.
+  // pas si la session existe. Afficher le fil maintenant ferait apparaître
+  // l'interface du visiteur à quelqu'un qui est déjà connecté, le temps d'un
+  // battement.
   if (!isHydrated) {
     return <View className="flex-1 bg-white" />;
-  }
-
-  // `isGuest` est la seule dérogation : elle vaut pour la session en cours, ne
-  // survit pas au redémarrage, et n'autorise rien. Chaque action se heurte à
-  // `useRequireAuth` et repasse par la connexion.
-  if (!isAuthenticated && !isGuest) {
-    // `returnTo` est porté ici plutôt que par chaque écran : quelqu'un
-    // interrompu au panier doit y revenir, et c'est désormais la garde qui le
-    // sait puisqu'elle est seule à rediriger.
-    //
-    // Sauf après une déconnexion VOLONTAIRE. Sans cette distinction, quitter
-    // depuis Réglages y ramenait à la reconnexion suivante : la garde voyait le
-    // même `pathname` dans les deux cas et ne pouvait pas savoir lequel des
-    // deux venait de se produire. La destination dépend de l'intention, pas de
-    // l'écran affiché — seul le magasin connaît l'intention.
-    const href =
-      sessionEndReason === 'user'
-        ? '/login'
-        : `/login?returnTo=${encodeURIComponent(pathname)}`;
-    return <Redirect href={href} />;
   }
 
   /**
@@ -120,8 +101,9 @@ export default function AppLayout() {
    * et la personne ne peut plus ni se reconnecter ni réinitialiser son mot de
    * passe, alors qu'on détient son acceptation.
    *
-   * Les deux sont exemptés pour le visiteur sans compte : `me` n'existe pas,
-   * et une visite n'engage personne.
+   * Les deux ne concernent QUE les comptes : `me` n'existe pas pour un
+   * visiteur, et parcourir un catalogue n'engage personne. Le jour où il
+   * créera un compte, les deux écrans l'attendront.
    */
   const needsEmailVerification = Boolean(me && !me.emailVerified);
   const needsTerms = Boolean(me?.legal.needsAcceptance);

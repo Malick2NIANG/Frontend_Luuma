@@ -20,6 +20,7 @@ import { colors } from '@/constants/colors';
 import { useAuth } from '@/hooks/useAuth';
 import { useChatMessages, type ChatMessage } from '@/hooks/useChat';
 import { useConversations } from '@/hooks/useDirectChat';
+import { useRequireAuth } from '@/hooks/useRequireAuth';
 import { useUpload } from '@/hooks/useUpload';
 import { useVoiceRecorder } from '@/hooks/useVoiceRecorder';
 import { useAppLanguage } from '@/lib/appLanguage';
@@ -35,6 +36,12 @@ export default function ChatScreen() {
   const { user } = useAuth();
   const listRef = useRef<ComponentRef<typeof FlatList<ChatMessage>>>(null);
 
+  // Une conversation est toujours liée à un compte — client, commerçant ou
+  // GP — jamais à une visite. Rien à montrer à un visiteur ici, donc on
+  // redirige plutôt que d'ouvrir un socket et de charger un historique pour
+  // un `chatId` qui ne lui appartient pas.
+  const { isReady } = useRequireAuth(`/(app)/chat/${chatId}`);
+
   const {
     messages,
     isLoading,
@@ -43,7 +50,7 @@ export default function ChatScreen() {
     send,
     setTyping,
     markAsRead,
-  } = useChatMessages(chatId);
+  } = useChatMessages(isReady ? chatId : undefined);
 
   // L'en-tête réutilise la liste des conversations, déjà en cache quand on
   // arrive depuis l'onglet Messages : c'est la seule source qui sache si le
@@ -132,6 +139,16 @@ export default function ChatScreen() {
     await recorder.cancel();
     setTyping(false, false);
   };
+
+  // Attendre la redirection plutôt que d'ouvrir une conversation à quelqu'un
+  // qu'on s'apprête à envoyer vers la connexion.
+  if (!isReady) {
+    return (
+      <SafeAreaView className="flex-1 items-center justify-center bg-white">
+        <ActivityIndicator size="large" color={colors.primary} />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top', 'bottom']}>

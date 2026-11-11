@@ -9,6 +9,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { colors } from '@/constants/colors';
 import { useOrderChat } from '@/hooks/useChat';
 import { useCancelOrder, useOrder } from '@/hooks/useOrders';
+import { useRequireAuth } from '@/hooks/useRequireAuth';
 import { formatDate, formatEur, formatWeight } from '@/lib/format';
 import { useAppLanguage } from '@/lib/appLanguage';
 import type { PackageStatus } from '@/types/api.types';
@@ -47,11 +48,15 @@ export default function OrderDetailScreen() {
   const router = useRouter();
   const goBack = useGoBack('/(app)/orders');
 
-  const { data: order, isLoading, isError, refetch } = useOrder(id);
-  const { data: chat } = useOrderChat(id);
+  // Le détail d'une commande n'a pas de sens pour un visiteur — n'importe
+  // quel `id` deviné échouerait côté serveur de toute façon, mais autant ne
+  // jamais lancer la requête.
+  const { isReady } = useRequireAuth(`/(app)/orders/${id}`);
+  const { data: order, isLoading, isError, refetch } = useOrder(isReady ? id : undefined);
+  const { data: chat } = useOrderChat(isReady ? id : undefined);
   const cancelOrder = useCancelOrder();
 
-  if (isLoading) {
+  if (!isReady || isLoading) {
     return (
       <SafeAreaView className="flex-1 items-center justify-center bg-white">
         <ActivityIndicator size="large" color={colors.primary} />

@@ -78,6 +78,20 @@ export default function ProfileScreen() {
   if (!isAuthenticated) {
     return (
       <SafeAreaView className="flex-1 bg-white" edges={['top']}>
+        {/* Même en-tête que l'écran connecté, bouton de réglages compris :
+            `settings.tsx` se protège lui-même via `useRequireAuth`, un
+            visiteur qui le touche est simplement renvoyé à la connexion. */}
+        <View className="flex-row items-center border-b border-gray-100 px-4 pb-2.5 pt-1">
+          <Text className="text-lg font-bold text-gray-900">{t('Profil', 'Profile')}</Text>
+          <Pressable
+            className="ml-auto h-9 w-9 items-center justify-center rounded-full bg-gray-100"
+            accessibilityRole="button"
+            accessibilityLabel={t('Paramètres', 'Settings')}
+            onPress={() => router.push('/(app)/settings')}
+          >
+            <Ionicons name="settings-outline" size={18} color={colors.text} />
+          </Pressable>
+        </View>
         <AuthPrompt
           icon="person-circle-outline"
           title={t('Votre espace Luuma', 'Your Luuma space')}

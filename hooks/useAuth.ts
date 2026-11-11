@@ -207,19 +207,22 @@ export function useAuth() {
   const user = useAuthStore((state) => state.user);
   const token = useAuthStore((state) => state.token);
   const isHydrated = useAuthStore((state) => state.isHydrated);
-  const isGuest = useAuthStore((state) => state.isGuest);
 
   return {
     user,
     token,
     isHydrated,
-    isAuthenticated: Boolean(token),
     /**
-     * Visite sans compte. À ne consulter QUE pour décider de l'affichage —
-     * jamais pour autoriser une action : c'est `isAuthenticated` qui fait foi,
-     * et le serveur qui tranche.
+     * La seule question qui vaille. Son contraire — ne pas être authentifié —
+     * désigne désormais un visiteur en train de parcourir le catalogue, ce
+     * qui est un état normal et non une anomalie. `isGuest` disait la même
+     * chose avec un second drapeau, qu'il fallait tenir d'accord avec
+     * celui-ci.
+     *
+     * À consulter pour décider de l'AFFICHAGE. Jamais pour autoriser une
+     * action : c'est le serveur qui tranche, toujours.
      */
-    isGuest,
+    isAuthenticated: Boolean(token),
   };
 }
 
@@ -311,10 +314,21 @@ export function useLogout() {
       // suivant retrouverait les articles du précédent, prêts à être
       // commandés à son nom.
       useCartStore.getState().clear();
-      // AUCUNE navigation ici, volontairement. Vider le magasin suffit : la
-      // garde de `(app)/_layout.tsx` s'en rend compte au re-rendu et redirige.
-      // Naviguer en plus ferait partir deux actions vers la même destination,
-      // et la seconde échouerait en « GO_BACK not handled ».
+
+      /**
+       * Retour au FIL, pas au formulaire de connexion.
+       *
+       * Se déconnecter ne fait plus sortir de l'application : on redevient
+       * visiteur, et un visiteur a sa place sur le catalogue. Renvoyer au
+       * formulaire reviendrait à dire « vous n'avez plus rien à faire ici »,
+       * ce qui est faux depuis que la boutique est ouverte à tous.
+       *
+       * C'est `useLogout` qui navigue, et lui seul : la garde du groupe ne
+       * redirige plus, et `useRequireAuth` se tait quand il voit une
+       * déconnexion volontaire. Un seul acteur, donc pas de navigations
+       * concurrentes — c'était la cause des « GO_BACK not handled ».
+       */
+      router.replace('/(app)/(tabs)');
     },
   });
 

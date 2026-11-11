@@ -41,20 +41,22 @@ interface AuthState {
   hasSavedSession: boolean;
   biometricEnabled: boolean;
   biometricPrompted: boolean;
-  /**
-   * Visite sans compte, explicitement demandée depuis l'écran de connexion.
+  /*
+   * `isGuest` a été SUPPRIMÉ, et son absence dit la nouvelle règle.
    *
-   * Volontairement NON persistée : elle ne vaut que pour la session en cours.
-   * L'enregistrer reviendrait à faire de la visite l'état par défaut, alors
-   * que l'application doit rouvrir sur la connexion — c'est tout l'objet de
-   * la garde. Rien ici n'autorise la moindre action : le jeton reste absent,
-   * donc tout appel authentifié échoue et `useRequireAuth` renvoie au login.
+   * Il distinguait « visiteur autorisé » de « personne non connectée », parce
+   * que l'application s'ouvrait sur la connexion et que la visite était une
+   * dérogation à demander. Luuma est une place de marché : on y entre comme
+   * dans une boutique, le catalogue est ouvert, et le compte n'est réclamé
+   * qu'au moment de payer.
+   *
+   * Il n'y a donc plus deux états à distinguer, mais un seul fait : il y a un
+   * jeton, ou il n'y en a pas. Garder un drapeau pour redire ce que `token`
+   * dit déjà aurait laissé deux sources désaccordables.
    */
-  isGuest: boolean;
   /** `null` tant qu'aucune session ne s'est terminée dans cette exécution. */
   sessionEndReason: SessionEndReason | null;
   setAuth: (user: User, token: string) => void;
-  continueAsGuest: () => void;
   logout: (reason?: SessionEndReason) => void;
   hydrate: () => Promise<void>;
   unlockWithBiometrics: () => Promise<BiometricUnlockResult>;
@@ -94,10 +96,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   hasSavedSession: false,
   biometricEnabled: false,
   biometricPrompted: false,
-  isGuest: false,
   sessionEndReason: null,
-
-  continueAsGuest: () => set({ isGuest: true }),
 
   setAuth: (user, token) => {
     // L'état mémoire est posé d'abord, et l'écriture disque ne peut plus
@@ -108,7 +107,6 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({
       user,
       token,
-      isGuest: false,
       hasSavedSession: true,
       sessionEndReason: null,
     });
@@ -138,7 +136,6 @@ export const useAuthStore = create<AuthState>((set) => ({
     set({
       user: null,
       token: null,
-      isGuest: false,
       hasSavedSession: false,
       sessionEndReason: reason,
     });
@@ -215,7 +212,6 @@ export const useAuthStore = create<AuthState>((set) => ({
         token: stored.token,
         hasSavedSession: true,
         isHydrated: true,
-        isGuest: false,
       });
       return 'success';
     } catch (error) {

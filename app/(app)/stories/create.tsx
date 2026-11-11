@@ -21,6 +21,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { colors } from '@/constants/colors';
 import { api } from '@/lib/api';
 import { useMe } from '@/hooks/useMe';
+import { useRequireAuth } from '@/hooks/useRequireAuth';
 import { useUpload } from '@/hooks/useUpload';
 import type { RoleType, StoryMediaType } from '@/types/api.types';
 import { useAppLanguage } from '@/lib/appLanguage';
@@ -43,6 +44,12 @@ export default function CreateStoryScreen() {
   const goBack = useGoBack('/(app)/(tabs)');
   const queryClient = useQueryClient();
 
+  // Publier une story suppose un compte, et plus précisément un compte
+  // professionnel approuvé — mais ce second filtre (`can.publishStory`) ne
+  // dit rien à un visiteur qui n'a pas de compte du tout : sans cette garde,
+  // il recevait directement « Réservé aux boutiques et aux GP », message
+  // faux pour lui autant qu'inutile.
+  const { isReady } = useRequireAuth('/(app)/stories/create');
   const { me, can, isLoading: rolesLoading } = useMe();
   const { upload, isUploading } = useUpload();
 
@@ -75,7 +82,9 @@ export default function CreateStoryScreen() {
     onError: () => setError(t("La publication a échoué. Réessayez.", 'Publishing failed. Please try again.')),
   });
 
-  if (rolesLoading) {
+  // Attendre la redirection plutôt que d'afficher quoi que ce soit à
+  // quelqu'un qu'on s'apprête à envoyer vers la connexion.
+  if (!isReady || rolesLoading) {
     return (
       <SafeAreaView className="flex-1 items-center justify-center bg-white">
         <ActivityIndicator color={colors.primary} />
