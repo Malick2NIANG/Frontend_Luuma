@@ -1,7 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import { Text, View, type OpaqueColorValue } from 'react-native';
+import { DesktopSidebar } from '@/components/navigation/DesktopSidebar';
 import { colors } from '@/constants/colors';
+import { LARGEUR_COLONNE, useMiseEnPage } from '@/hooks/useContentWidth';
 import { useAuth } from '@/hooks/useAuth';
 import { useConversations } from '@/hooks/useDirectChat';
 import { useMe } from '@/hooks/useMe';
@@ -28,6 +30,9 @@ import { useAppLanguage } from '@/lib/appLanguage';
 export default function TabsLayout() {
   const { t } = useAppLanguage();
   const { user } = useAuth();
+  // Sur tablette et ordinateur, la barre d'onglets devient une barre
+  // d'icônes à gauche.
+  const surOrdinateur = useMiseEnPage().barreLaterale;
 
   const { data: conversations } = useConversations();
   const unread =
@@ -64,7 +69,30 @@ export default function TabsLayout() {
        * de l'utilisateur.
        */
       key={user?.id ?? 'guest'}
+      tabBar={
+        surOrdinateur
+          ? (props) => <DesktopSidebar {...props} nonLus={unread} />
+          : undefined
+      }
+      /**
+       * À côté de la barre latérale, chaque onglet tient dans une colonne
+       * centrée — sauf le fil, qui gère lui-même sa colonne de droite, et la
+       * recherche, dont la grille prend la largeur disponible.
+       */
+      screenLayout={({ children, route }) =>
+        surOrdinateur && route.name !== 'index' && route.name !== 'search' ? (
+          <View
+            className="flex-1 bg-white"
+            style={{ width: '100%', maxWidth: LARGEUR_COLONNE, alignSelf: 'center' }}
+          >
+            {children}
+          </View>
+        ) : (
+          children
+        )
+      }
       screenOptions={{
+        tabBarPosition: surOrdinateur ? 'left' : 'bottom',
         headerShown: false,
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: '#6B7280',

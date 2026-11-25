@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { FlashList } from '@shopify/flash-list';
 import {
@@ -8,11 +9,16 @@ import {
   Text,
   TextInput,
   View,
+  useWindowDimensions,
 } from 'react-native';
-import { useContentWidth } from '@/hooks/useContentWidth';
+import {
+  LARGEUR_BARRE_LATERALE,
+  LARGEUR_COLONNE,
+  useMiseEnPage,
+} from '@/hooks/useContentWidth';
 import { useAppLanguage } from '@/lib/appLanguage';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { FilterSheet } from '@/components/search/FilterSheet';
+import { FilterPanel, FilterSheet } from '@/components/search/FilterSheet';
 import { GpCard } from '@/components/search/GpCard';
 import { MerchantCard } from '@/components/search/MerchantCard';
 import { ProductCell } from '@/components/search/ProductCell';
@@ -48,6 +54,12 @@ const TARGET_TILE_WIDTH = 190;
 const MIN_COLUMNS = 2;
 const GRID_GUTTER = 8;
 
+/** Largeur maximale de la zone de recherche sur grand écran (grille + filtres). */
+const LARGEUR_RECHERCHE_MAX = 1180;
+/** Panneau de filtres permanent, sur ordinateur. */
+const LARGEUR_PANNEAU_FILTRES = 260;
+const ECART_PANNEAU = 24;
+
 /**
  * L'onglet Recherche.
  *
@@ -57,7 +69,10 @@ const GRID_GUTTER = 8;
  */
 export default function SearchScreen() {
   const { t } = useAppLanguage();
-  const contentWidth = useContentWidth();
+  const mise = useMiseEnPage();
+  const { width: largeurFenetre } = useWindowDimensions();
+  // « Voir tout » depuis la colonne de droite du fil ouvre les boutiques.
+  const { segment: segmentDemande } = useLocalSearchParams<{ segment?: string }>();
 
   const segments: { value: Segment; label: string }[] = [
     { value: 'products', label: t('Produits', 'Products') },
@@ -70,7 +85,13 @@ export default function SearchScreen() {
     merchants: t('Le nom d’une boutique', 'A shop name'),
   };
 
-  const [segment, setSegment] = useState<Segment>('products');
+  const [segment, setSegment] = useState<Segment>(
+    estSegment(segmentDemande) ? segmentDemande : 'products',
+  );
+  // L'onglet reste monté : un nouveau lien doit aussi changer de segment.
+  useEffect(() => {
+    if (estSegment(segmentDemande)) setSegment(segmentDemande);
+  }, [segmentDemande]);
   const [query, setQuery] = useState('');
   const [focused, setFocused] = useState(false);
   const [filters, setFilters] = useState<SearchFilters>(EMPTY_FILTERS);
@@ -92,6 +113,23 @@ export default function SearchScreen() {
   const suggestions = useSuggestions(query);
 
   const activeFilters = countActiveFilters(filters);
+
+  /**
+   * Sur ordinateur, comme Marketplace : les filtres en panneau permanent à
+   * gauche, la grille à côté. Les GP et boutiques sont des listes : une
+   * colonne de lecture leur suffit.
+   */
+  const panneauFiltres = mise.format === 'ordinateur' && segment === 'products';
+  const largeurZone = mise.barreLaterale
+    ? Math.min(largeurFenetre - LARGEUR_BARRE_LATERALE - 32, LARGEUR_RECHERCHE_MAX)
+    : largeurFenetre;
+  const contentWidth = !mise.barreLaterale
+    ? largeurFenetre
+    : segment !== 'products'
+      ? Math.min(LARGEUR_COLONNE, largeurZone)
+      : panneauFiltres
+        ? largeurZone - LARGEUR_PANNEAU_FILTRES - ECART_PANNEAU
+        : largeurZone;
   const columns = Math.max(
     MIN_COLUMNS,
     Math.floor(contentWidth / TARGET_TILE_WIDTH),
@@ -105,6 +143,20 @@ export default function SearchScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
+      <View className="flex-1 flex-row justify-center">
+      {panneauFiltres ? (
+        <View style={{ width: LARGEUR_PANNEAU_FILTRES, marginRight: ECART_PANNEAU }}>
+          <FilterPanel
+            filters={filters}
+            onChange={setFilters}
+            resultCount={products.data?.total}
+          />
+        </View>
+      ) : null}
+      <View
+        className="flex-1"
+        style={mise.barreLaterale ? { maxWidth: contentWidth } : undefined}
+      >
       <View className="flex-row items-center gap-2 px-3 pb-2 pt-2">
         <View className="flex-1 flex-row items-center gap-2 rounded-xl bg-gray-100 px-3 py-2.5">
           <Ionicons name="search" size={17} color="#9CA3AF" />
@@ -139,7 +191,7 @@ export default function SearchScreen() {
           >
             <Text className="text-xs text-gray-500">{t('Annuler', 'Cancel')}</Text>
           </Pressable>
-        ) : segment === 'products' ? (
+        ) : segment === 'products' && !panneauFiltres ? (
           <Pressable
             onPress={() => setSheetOpen(true)}
             className="h-10 w-10 items-center justify-center rounded-xl bg-gray-100"
@@ -299,8 +351,11 @@ export default function SearchScreen() {
         </ResultsPane>
       )}
 
+      </View>
+      </View>
+
       <FilterSheet
-        visible={sheetOpen}
+        visible={sheetOpen && !panneauFiltres}
         filters={filters}
         resultCount={products.data?.total}
         onClose={() => setSheetOpen(false)}
@@ -473,4 +528,8 @@ function Note({ text }: { text: string }) {
       <Text className="text-[11px] leading-4 text-amber-900">{text}</Text>
     </View>
   );
+}
+
+function estSegment(valeur: unknown): valeur is Segment {
+  return valeur === 'products' || valeur === 'gps' || valeur === 'merchants';
 }

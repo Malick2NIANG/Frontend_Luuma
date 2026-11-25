@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useRef, useState, type ComponentRef } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import {
+  Platform,
   Pressable,
   ScrollView,
   Text,
@@ -9,6 +10,7 @@ import {
   type NativeScrollEvent,
   type NativeSyntheticEvent,
 } from 'react-native';
+import { InlineVideo } from '@/components/media/InlineVideo';
 import { MediaViewer } from '@/components/media/MediaViewer';
 import { colors } from '@/constants/colors';
 import { useContentWidth } from '@/hooks/useContentWidth';
@@ -16,6 +18,13 @@ import { toMediaItems } from '@/lib/media';
 import { useAppLanguage } from '@/lib/appLanguage';
 
 const MAX_MEDIA_WIDTH = 960;
+
+/** L'appareil a un pointeur précis qui survole : une souris ou un pavé tactile. */
+const SOURIS =
+  Platform.OS === 'web' &&
+  typeof window !== 'undefined' &&
+  typeof window.matchMedia === 'function' &&
+  window.matchMedia('(hover: hover) and (pointer: fine)').matches;
 
 export interface MediaCarouselProps {
   /** Photos et vidéos mélangées, dans l'ordre choisi par le commerçant. */
@@ -29,25 +38,33 @@ export interface MediaCarouselProps {
    * faux dans le fil où le toucher doit mener à la fiche.
    */
   openOnPress?: boolean;
+  /**
+   * La publication est-elle regardée en ce moment ? Dans le fil : visible à
+   * l'écran ET onglet actif. Une vidéo ne joue que si c'est le cas.
+   * Vrai par défaut — sur la fiche produit, le carrousel est toujours vu.
+   */
+  active?: boolean;
 }
 
 /**
- * Carrousel paginé mêlant photos et vidéos.
+ * Carrousel paginé mêlant photos et vidéos, à la manière d'Instagram.
  *
  * Un `ScrollView` avec `pagingEnabled` plutôt qu'une liste virtualisée : une
  * publication compte rarement plus de dix médias, et la virtualisation
  * introduirait des blancs au défilement rapide pour aucun gain réel.
  *
- * Les vidéos ne sont PAS chargées ici : elles s'affichent en vignette sombre
- * avec un bouton de lecture, et ne se téléchargent qu'à l'ouverture du plein
- * écran. Précharger plusieurs mégaoctets pour quelqu'un qui fait défiler son
- * fil consommerait son forfait sans qu'il l'ait demandé.
+ * VIDÉOS : celle de la diapositive affichée se lance seule, sans le son,
+ * quand la publication est regardée (`active`), et s'arrête dès qu'on glisse
+ * vers la suivante ou que la publication sort de l'écran. Seule cette vidéo-là
+ * est chargée : les autres restent des vignettes. Toucher une vidéo active ou
+ * coupe le son ; sur la fiche, un bouton dédié ouvre le plein écran.
  */
 export function MediaCarousel({
   media,
   aspectRatio = 1.2,
   horizontalInset = 0,
   openOnPress = false,
+  active = true,
 }: MediaCarouselProps) {
   const { t } = useAppLanguage();
   const contentWidth = useContentWidth();
@@ -55,6 +72,7 @@ export function MediaCarousel({
   const height = width / aspectRatio;
 
   const [index, setIndex] = useState(0);
+  const scrollRef = useRef<ComponentRef<typeof ScrollView>>(null);
   const [viewerOpen, setViewerOpen] = useState(false);
 
   const items = toMediaItems(media);
@@ -74,10 +92,31 @@ export function MediaCarousel({
     );
   }
 
+  /**
+   * Suivi de la diapositive affichée PENDANT le défilement.
+   *
+   * `onMomentumScrollEnd` n'existe pas sur le web : le compteur restait figé
+   * à « 1/2 » et la vidéo ne démarrait jamais. `onScroll` fonctionne partout ;
+   * on ne met l'état à jour que lorsque la diapositive change réellement.
+   */
   const handleScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const next = Math.round(event.nativeEvent.contentOffset.x / width);
-    if (next !== index) setIndex(next);
+    if (next !== index && next >= 0 && next < items.length) setIndex(next);
   };
+
+  const allerA = (cible: number) => {
+    const borne = Math.max(0, Math.min(items.length - 1, cible));
+    scrollRef.current?.scrollTo({ x: borne * width, animated: true });
+    setIndex(borne);
+  };
+
+  /**
+   * Flèches ‹ › : seulement avec une souris, qui ne sait pas glisser.
+   *
+   * Pas sur le web en général : dans le navigateur d'un téléphone, on glisse
+   * au doigt, et des flèches y encombreraient la photo pour rien.
+   */
+  const fleches = SOURIS && items.length > 1;
 
   return (
     <View
@@ -85,46 +124,49 @@ export function MediaCarousel({
       className={['overflow-hidden', rounded].join(' ')}
     >
       <ScrollView
+        ref={scrollRef}
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
-        onMomentumScrollEnd={handleScroll}
-        scrollEventThrottle={16}
+        onScroll={handleScroll}
+        scrollEventThrottle={32}
       >
         {items.map((item, position) => (
           <Pressable
             key={item.uri}
+            // Sur une vidéo, le toucher règle le son (InlineVideo) : il ne
+            // doit pas aussi ouvrir le plein écran.
             onPress={
-              openOnPress
+              openOnPress && item.kind === 'image'
                 ? () => {
                     setIndex(position);
                     setViewerOpen(true);
                   }
                 : undefined
             }
-            accessibilityRole={openOnPress ? 'button' : undefined}
+            disabled={item.kind === 'video'}
+            accessibilityRole={openOnPress && item.kind === 'image' ? 'button' : undefined}
             accessibilityLabel={
-              openOnPress
-                ? item.kind === 'video'
-                  ? t('Lire la vidéo en plein écran', 'Play video in full screen')
-                  : t('Agrandir la photo', 'Enlarge photo')
+              openOnPress && item.kind === 'image'
+                ? t('Agrandir la photo', 'Enlarge photo')
                 : undefined
             }
             style={{ width, height }}
           >
             {item.kind === 'video' ? (
-              // Vignette et non lecteur : voir le commentaire d'en-tête.
-              <View
-                style={{ width, height }}
-                className="items-center justify-center bg-gray-900"
-              >
-                <View className="h-16 w-16 items-center justify-center rounded-full bg-white/20">
-                  <Ionicons name="play" size={30} color={colors.white} />
-                </View>
-                <Text className="mt-2.5 text-[11px] text-white/70">
-                  {t('Vidéo · touchez pour lire', 'Video · tap to play')}
-                </Text>
-              </View>
+              active && position === index ? (
+                <InlineVideo
+                  uri={item.uri}
+                  width={width}
+                  height={height}
+                  playing={active && !viewerOpen}
+                />
+              ) : (
+                // Fond neutre, sans bouton de lecture : comme sur Instagram,
+                // la vidéo démarre d'elle-même dès qu'on arrive dessus. Rien
+                // n'est téléchargé tant qu'elle est hors champ.
+                <View style={{ width, height }} className="bg-gray-900" />
+              )
             ) : (
               <Image
                 source={{ uri: item.uri }}
@@ -161,11 +203,46 @@ export function MediaCarousel({
         </>
       )}
 
+      {fleches && index > 0 ? (
+        <Pressable
+          onPress={() => allerA(index - 1)}
+          accessibilityRole="button"
+          accessibilityLabel={t('Précédent', 'Previous')}
+          className="absolute left-2 top-1/2 -mt-4 h-8 w-8 items-center justify-center rounded-full bg-white/85"
+        >
+          <Ionicons name="chevron-back" size={18} color={colors.text} />
+        </Pressable>
+      ) : null}
+      {fleches && index < items.length - 1 ? (
+        <Pressable
+          onPress={() => allerA(index + 1)}
+          accessibilityRole="button"
+          accessibilityLabel={t('Suivant', 'Next')}
+          className="absolute right-2 top-1/2 -mt-4 h-8 w-8 items-center justify-center rounded-full bg-white/85"
+        >
+          <Ionicons name="chevron-forward" size={18} color={colors.text} />
+        </Pressable>
+      ) : null}
+
       {/* Loupe discrète : sans elle, rien n'indique que l'image s'agrandit. */}
       {openOnPress && items[index]?.kind === 'image' ? (
         <View className="absolute bottom-3 right-3 h-8 w-8 items-center justify-center rounded-full bg-black/45">
           <Ionicons name="expand-outline" size={16} color={colors.white} />
         </View>
+      ) : null}
+
+      {/* Sur la fiche, une vidéo s'ouvre en plein écran par un bouton à part
+          (en haut à gauche) : le toucher sur la vidéo est pris par le son. */}
+      {openOnPress && items[index]?.kind === 'video' ? (
+        <Pressable
+          onPress={() => setViewerOpen(true)}
+          accessibilityRole="button"
+          accessibilityLabel={t('Voir en plein écran', 'View full screen')}
+          hitSlop={8}
+          className="absolute left-3 top-3 h-8 w-8 items-center justify-center rounded-full bg-black/60"
+        >
+          <Ionicons name="expand-outline" size={16} color={colors.white} />
+        </Pressable>
       ) : null}
 
       <MediaViewer

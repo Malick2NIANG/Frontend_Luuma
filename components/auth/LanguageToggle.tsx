@@ -8,7 +8,7 @@ export function LanguageToggle({ light = false }: { light?: boolean }) {
     <View
       className={[
         'flex-row rounded-full border p-1',
-        light ? 'border-white/40 bg-white/10' : 'border-gray-200 bg-gray-100',
+        light ? 'border-white/40 bg-white/10' : 'border-transparent bg-gray-100',
       ].join(' ')}
     >
       {(['fr', 'en'] as const).map((option) => {
@@ -22,6 +22,18 @@ export function LanguageToggle({ light = false }: { light?: boolean }) {
             accessibilityRole="radio"
             accessibilityLabel={label}
             accessibilityState={{ selected }}
+            // Segment actif « posé » sur le rail, comme le sélecteur d'iOS.
+            style={
+              selected && !light
+                ? {
+                    shadowColor: '#000',
+                    shadowOpacity: 0.12,
+                    shadowRadius: 3,
+                    shadowOffset: { width: 0, height: 1 },
+                    elevation: 2,
+                  }
+                : undefined
+            }
             className={[
               'min-h-8 min-w-12 items-center justify-center rounded-full px-3',
               selected ? 'bg-white' : '',

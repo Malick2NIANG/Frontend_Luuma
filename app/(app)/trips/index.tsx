@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useGoBack } from '@/hooks/useGoBack';
@@ -15,6 +15,7 @@ import { TripCard } from '@/components/TripCard';
 import { Button } from '@/components/ui/Button';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { colors } from '@/constants/colors';
+import { useAddresses } from '@/hooks/useAddresses';
 import { useTripSearch } from '@/hooks/useCatalog';
 import { formatWeight } from '@/lib/format';
 import { cartTotalWeight, useCartStore } from '@/store/cart.store';
@@ -38,10 +39,51 @@ export default function TripSelectionScreen() {
   const items = useCartStore((s) => s.items);
   const requiredWeight = cartTotalWeight(items);
 
+  /**
+   * La destination part de l'adresse enregistrée, au lieu d'un écran vide.
+   *
+   * Il fallait taper sa ville à la main à chaque commande, alors que
+   * l'application connaît l'adresse de livraison. Le client ne cherche pas
+   * un GP « pour Paris » : il cherche un GP qui vient CHEZ LUI.
+   */
+  const { defaultAddress } = useAddresses();
+
   const [destination, setDestination] = useState<{
     city: string;
     country: string;
   } | null>(null);
+
+  /**
+   * Appliqué À SON ARRIVÉE, pas à l'initialisation.
+   *
+   * L'adresse vient du réseau : au premier rendu elle est nulle, donc une
+   * valeur initiale n'aurait jamais rien pré-rempli.
+   *
+   * `touchedDestination` protège le choix manuel. Sans lui, quelqu'un qui
+   * sélectionne Lyon verrait sa sélection écrasée par Paris dès que la
+   * requête se rafraîchit — au retour sur l'écran, par exemple.
+   */
+  const [touchedDestination, setTouchedDestination] = useState(false);
+
+  useEffect(() => {
+    if (touchedDestination || destination || !defaultAddress) return;
+    setDestination({
+      city: defaultAddress.city,
+      country: defaultAddress.country,
+    });
+  }, [defaultAddress, destination, touchedDestination]);
+
+  /**
+   * Tout choix explicite fige la destination : l'adresse ne la reprend plus.
+   * `null` compris — désélectionner sa ville est aussi un choix, et doit
+   * rester affiché plutôt que d'être aussitôt re-rempli.
+   */
+  const chooseDestination = (
+    next: { city: string; country: string } | null,
+  ) => {
+    setTouchedDestination(true);
+    setDestination(next);
+  };
   const [customCity, setCustomCity] = useState('');
   const [customCountry, setCustomCountry] = useState('');
 
@@ -71,7 +113,7 @@ export default function TripSelectionScreen() {
 
   const applyCustom = () => {
     if (customCity.trim().length < 2 || customCountry.trim().length !== 2) return;
-    setDestination({
+    chooseDestination({
       city: customCity.trim(),
       country: customCountry.trim().toUpperCase(),
     });
@@ -111,7 +153,7 @@ export default function TripSelectionScreen() {
                 <Pressable
                   key={`${dest.city}-${dest.country}`}
                   onPress={() =>
-                    setDestination(
+                    chooseDestination(
                       active ? null : { city: dest.city, country: dest.country },
                     )
                   }

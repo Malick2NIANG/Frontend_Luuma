@@ -51,11 +51,18 @@ export interface FeedTrip {
   remainingWeight: number;
 }
 
+/** Pourquoi une publication est proposée, quand ce n'est pas sa date. */
+export interface FeedRaison {
+  type: 'categorie';
+  categorie: ProductCategory;
+}
+
 interface FeedItemBase {
   /** Préfixé par type (`product:` / `trip:`) : unique tous types confondus. */
   id: string;
   publishedAt: string;
   author: FeedAuthor;
+  raison?: FeedRaison;
 }
 
 export type FeedItem =

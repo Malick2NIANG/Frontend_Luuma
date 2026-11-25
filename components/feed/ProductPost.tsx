@@ -8,7 +8,7 @@ import { colors } from '@/constants/colors';
 import { CATEGORY_SHORT_LABELS } from '@/constants/categories';
 import { formatEur, formatWeight, formatXof } from '@/lib/format';
 import { useAppLanguage } from '@/lib/appLanguage';
-import type { FeedAuthor, FeedProduct } from '@/types/feed.types';
+import type { FeedAuthor, FeedProduct, FeedRaison } from '@/types/feed.types';
 
 const CATEGORY_LABELS_EN: Record<FeedProduct['category'], string> = {
   VETEMENTS: 'Clothing',
@@ -27,6 +27,10 @@ export interface ProductPostProps {
   product: FeedProduct;
   author: FeedAuthor;
   publishedAt: string;
+  /** Présente quand le produit est une suggestion « Pour vous ». */
+  raison?: FeedRaison;
+  /** Publication à l'écran : ses vidéos peuvent jouer. */
+  active?: boolean;
 }
 
 /**
@@ -38,7 +42,13 @@ export interface ProductPostProps {
  * bouton selon le type de produit. Tout ce qui engage (favori, panier,
  * déclinaisons, avis, devise) vit désormais sur la fiche.
  */
-export function ProductPost({ product, author, publishedAt }: ProductPostProps) {
+export function ProductPost({
+  product,
+  author,
+  publishedAt,
+  raison,
+  active = false,
+}: ProductPostProps) {
   const router = useRouter();
   const { t } = useAppLanguage();
   const detailPath = `/(app)/products/${product.id}`;
@@ -47,10 +57,27 @@ export function ProductPost({ product, author, publishedAt }: ProductPostProps) 
 
   return (
     <View className="border-b border-gray-100 bg-white pb-2">
+      {/* Une suggestion dit d'où elle vient : sans cela, elle ressemble à
+          une publicité glissée dans le fil. */}
+      {raison ? (
+        <View className="flex-row items-center gap-1.5 px-3 pt-2.5">
+          <Ionicons name="sparkles-outline" size={13} color={colors.primary} />
+          <Text className="text-xs font-semibold text-primary">
+            {t('Pour vous', 'For you')}
+          </Text>
+          <Text className="text-xs text-gray-400">
+            ·{' '}
+            {t(
+              `Vous aimez : ${CATEGORY_SHORT_LABELS[raison.categorie]}`,
+              `You like: ${CATEGORY_LABELS_EN[raison.categorie]}`,
+            )}
+          </Text>
+        </View>
+      ) : null}
       <PostHeader author={author} publishedAt={publishedAt} />
 
       <Pressable onPress={openDetail}>
-        <MediaCarousel media={product.images} aspectRatio={4 / 3} />
+        <MediaCarousel media={product.images} aspectRatio={4 / 3} active={active} />
       </Pressable>
 
       <Pressable className="mt-2.5 px-3" onPress={openDetail}>

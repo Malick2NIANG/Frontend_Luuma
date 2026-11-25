@@ -1,18 +1,22 @@
 import { useState } from 'react';
+import Constants from 'expo-constants';
 import { Ionicons } from '@expo/vector-icons';
 
 import { useGoBack } from '@/hooks/useGoBack';
 import { useRouter } from 'expo-router';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { HelpSheet } from '@/components/HelpSheet';
 import { Button } from '@/components/ui/Button';
 import { SettingsGroup, SettingsRow } from '@/components/ui/SettingsRow';
 import { colors } from '@/constants/colors';
-import { useLogout } from '@/hooks/useAuth';
+import { useAuth, useLogout } from '@/hooks/useAuth';
 import { useSetMarketingConsent } from '@/hooks/useLegal';
 import { useMe } from '@/hooks/useMe';
-import { useRequireAuth } from '@/hooks/useRequireAuth';
+import { findCountry } from '@/constants/countries';
+import { useCurrencyStore } from '@/hooks/useCurrency';
 import { useAppLanguage } from '@/lib/appLanguage';
+import { useOnboardingStore } from '@/store/onboarding.store';
 
 /**
  * Réglages.
@@ -27,17 +31,115 @@ export default function SettingsScreen() {
   const goBack = useGoBack('/(app)/(tabs)/profile');
   const router = useRouter();
   const logout = useLogout();
-  const { isReady } = useRequireAuth('/(app)/settings');
+  const { isAuthenticated, isHydrated } = useAuth();
+  const devise = useCurrencyStore((s) => s.currency);
+  const paysIso = useOnboardingStore((s) => s.pays);
+  const zone = useOnboardingStore((s) => s.zone);
   const { me } = useMe();
   const setMarketingConsent = useSetMarketingConsent();
   const { t } = useAppLanguage();
+  const paysLibelle = paysIso
+    ? findCountry(paysIso).name
+    : zone === 'ETRANGER'
+      ? t('Autre pays', 'Other country')
+      : t('Non renseigné', 'Not set');
 
+  const [aideOuverte, setAideOuverte] = useState(false);
   const [notifyOrders, setNotifyOrders] = useState(true);
   const [notifyMessages, setNotifyMessages] = useState(true);
   const [notifyTrips, setNotifyTrips] = useState(true);
   const [notifyShops, setNotifyShops] = useState(false);
 
-  if (!isReady) return <View className="flex-1 bg-white" />;
+  if (!isHydrated) return <View className="flex-1 bg-white" />;
+
+  // Une ligne partagée par les deux versions de l'écran.
+  const ligneZone = (
+    <SettingsRow
+      icon="earth-outline"
+      title={t('Pays et devise', 'Country and currency')}
+      subtitle={`${paysLibelle} · ${devise}`}
+      onPress={() => router.push('/onboarding?modifier=1')}
+    />
+  );
+
+  const enTete = (
+    <View className="flex-row items-center gap-3 border-b border-gray-100 px-3.5 pb-2.5 pt-1">
+      <Pressable onPress={goBack}
+        accessibilityRole="button"
+        accessibilityLabel={t('Retour', 'Back')} hitSlop={10}>
+        <Ionicons name="arrow-back" size={22} color={colors.text} />
+      </Pressable>
+      <Text className="text-lg font-bold text-gray-900">{t('Réglages', 'Settings')}</Text>
+    </View>
+  );
+
+  /** Pied de page commun : l'aide, puis la version — utile au support. */
+  const piedDePage = (
+    <View className="items-center px-3.5 pb-4 pt-8">
+      <Pressable
+        onPress={() => setAideOuverte(true)}
+        accessibilityRole="button"
+        hitSlop={8}
+        className="flex-row items-center"
+      >
+        <Ionicons name="help-circle-outline" size={17} color={colors.primary} />
+        <Text className="ml-1.5 text-sm font-semibold text-primary">
+          {t("Besoin d'aide ?", 'Need help?')}
+        </Text>
+      </Pressable>
+      <Text className="mt-3 text-xs text-gray-400">
+        Luuma · {t('version', 'version')} {Constants.expoConfig?.version ?? '1.0.0'}
+      </Text>
+      <HelpSheet visible={aideOuverte} onClose={() => setAideOuverte(false)} />
+    </View>
+  );
+
+  /**
+   * Visiteur sans compte : les réglages ne lui sont plus fermés.
+   *
+   * L'accueil promet « pays et devise modifiables dans les paramètres » à
+   * tout le monde, compte ou pas. On lui montre donc ce qui le concerne —
+   * ses préférences et les documents légaux — et une entrée vers la
+   * connexion pour le reste, au lieu de le renvoyer d'office au formulaire.
+   */
+  if (!isAuthenticated) {
+    return (
+      <SafeAreaView className="flex-1 bg-white" edges={['top']}>
+        {enTete}
+        <ScrollView contentContainerClassName="pb-10">
+          <SettingsGroup label={t('Préférences', 'Preferences')} />
+          {ligneZone}
+
+          <SettingsGroup label={t('À propos', 'About')} />
+          <SettingsRow
+            icon="document-text-outline"
+            title={t('Conditions générales', 'Terms and conditions')}
+            onPress={() => router.push('/legal/terms')}
+          />
+          <SettingsRow
+            icon="lock-closed-outline"
+            title={t('Politique de confidentialité', 'Privacy policy')}
+            onPress={() => router.push('/legal/privacy')}
+          />
+
+          <View className="px-3.5 pb-2 pt-6">
+            <Button
+              fullWidth
+              onPress={() =>
+                router.push({
+                  pathname: '/(auth)/login',
+                  params: { returnTo: '/(app)/settings' },
+                })
+              }
+            >
+              {t('Se connecter', 'Log in')}
+            </Button>
+          </View>
+          {piedDePage}
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={['top']}>
@@ -61,8 +163,11 @@ export default function SettingsScreen() {
         <SettingsRow
           icon="location-outline"
           title={t('Adresses de livraison', 'Delivery addresses')}
-          subtitle={t('Bientôt disponible', 'Coming soon')}
-          disabled
+          subtitle={t(
+            'Proposées au moment de commander',
+            'Offered at checkout',
+          )}
+          onPress={() => router.push('/(app)/addresses')}
         />
         {/* Lit `me.emailVerified` (serveur), pas `user.emailVerified` (magasin
             local) : c'est la même donnée que consulte la garde bloquante de
@@ -147,17 +252,12 @@ export default function SettingsScreen() {
 
         <SettingsGroup label={t('Préférences', 'Preferences')} />
         <SettingsRow
-          icon="globe-outline"
+          icon="language-outline"
           title={t('Langue', 'Language')}
           subtitle={t('Français', 'English')}
           disabled
         />
-        <SettingsRow
-          icon="cash-outline"
-          title={t('Devise affichée', 'Displayed currency')}
-          subtitle={t('FCFA et EUR', 'XOF and EUR')}
-          disabled
-        />
+{ligneZone}
 
         <SettingsGroup label={t('À propos', 'About')} />
         <SettingsRow
@@ -195,6 +295,7 @@ export default function SettingsScreen() {
             {t('Se déconnecter', 'Log out')}
           </Button>
         </View>
+        {piedDePage}
       </ScrollView>
     </SafeAreaView>
   );

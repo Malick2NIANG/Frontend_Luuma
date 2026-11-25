@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native';
 import { BrandLogo } from '@/components/BrandLogo';
-import { AuthBackgroundCarousel } from '@/components/auth/AuthBackgroundCarousel';
+import { AuthSplit, useAuthSurface } from '@/components/auth/AuthSplit';
 import { AuthFooter } from '@/components/auth/AuthFooter';
 import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton';
 import { LanguageToggle } from '@/components/auth/LanguageToggle';
@@ -41,6 +41,9 @@ interface FormErrors {
 export default function RegisterScreen() {
   const { returnTo } = useLocalSearchParams<{ returnTo?: string }>();
   const { t } = useAppLanguage();
+  // Texte blanc sur les photos (téléphone, tablette), foncé sur le panneau
+  // blanc de l'écran partagé (ordinateur).
+  const surface = useAuthSurface();
   const register = useRegister();
   // Jamais `router.back()` en direct : arrivé par lien, par notification ou
   // après un rechargement de page, l'historique est vide et l'action échoue
@@ -160,7 +163,7 @@ export default function RegisterScreen() {
       style={{ flex: 1 }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <AuthBackgroundCarousel />
+      <AuthSplit>
       <Screen scroll contentMaxWidth={520} transparent style={{ zIndex: 1 }}>
         {/* Flèche de retour explicite : l'écran est atteint depuis la
             connexion, et le geste de retour n'existe pas sur le web. */}
@@ -176,21 +179,21 @@ export default function RegisterScreen() {
             accessibilityLabel={t('Retour', 'Back')}
             className="py-1"
           >
-            <Ionicons name="arrow-back" size={22} color="#FFFFFF" />
+            <Ionicons name="arrow-back" size={22} color={surface.icone} />
           </Pressable>
-          <LanguageToggle light />
+          <LanguageToggle light={surface.sombre} />
         </View>
 
         <View className="flex-1 justify-center gap-5 pb-6">
           <View className="items-center gap-4">
             {/* Même logo que la connexion et l'écran d'accueil. L'icône carrée
                 à coins arrondis faisait « raccourci d'application ». */}
-            <BrandLogo width={80} height={56} light />
+            <BrandLogo width={80} height={56} light={surface.sombre} />
             <View className="w-full gap-1">
-              <Text className="text-center text-2xl font-bold text-white">
+              <Text className={`text-center text-2xl font-bold ${surface.titre}`}>
                 {t('Créer un compte', 'Create an account')}
               </Text>
-              <Text className="text-center text-sm text-white">
+              <Text className={`text-center text-sm ${surface.texte}`}>
                 {t('Rejoignez la communauté Luuma', 'Join the Luuma community')}
               </Text>
             </View>
@@ -205,7 +208,7 @@ export default function RegisterScreen() {
               <View className="flex-1">
                 <Input
                   label={t('Prénom', 'First name')}
-                  appearance="light"
+                  appearance={surface.sombre ? 'light' : 'default'}
                   placeholder="Awa"
                   autoCapitalize="words"
                   autoComplete="given-name"
@@ -221,7 +224,7 @@ export default function RegisterScreen() {
                 <Input
                   ref={lastNameRef}
                   label={t('Nom', 'Last name')}
-                  appearance="light"
+                  appearance={surface.sombre ? 'light' : 'default'}
                   placeholder="Diop"
                   autoCapitalize="words"
                   autoComplete="family-name"
@@ -237,7 +240,7 @@ export default function RegisterScreen() {
             <Input
               ref={emailRef}
               label="Email"
-              appearance="light"
+              appearance={surface.sombre ? 'light' : 'default'}
               placeholder={t('vous@exemple.com', 'you@example.com')}
               autoCapitalize="none"
               autoComplete="email"
@@ -251,7 +254,7 @@ export default function RegisterScreen() {
             />
             <PhoneInput
               countryIso={countryIso}
-              appearance="light"
+              appearance={surface.sombre ? 'light' : 'default'}
               onCountryChange={setCountryIso}
               value={phone}
               onChangeText={setPhone}
@@ -260,7 +263,7 @@ export default function RegisterScreen() {
             <Input
               ref={passwordRef}
               label={t('Mot de passe', 'Password')}
-              appearance="light"
+              appearance={surface.sombre ? 'light' : 'default'}
               placeholder="••••••••"
               secureTextEntry
               autoCapitalize="none"
@@ -281,7 +284,7 @@ export default function RegisterScreen() {
             <Input
               ref={confirmRef}
               label={t('Confirmer le mot de passe', 'Confirm password')}
-              appearance="light"
+              appearance={surface.sombre ? 'light' : 'default'}
               placeholder="••••••••"
               secureTextEntry
               autoCapitalize="none"
@@ -298,18 +301,18 @@ export default function RegisterScreen() {
                 cochée à côté d'un lien qu'on n'ouvre jamais ne vaut pas un
                 consentement éclairé. Mais l'information doit être donnée AU
                 MOMENT DE LA COLLECTE, d'où cette mention et ces liens. */}
-            <Text className="text-center text-[11.5px] leading-[17px] text-white">
+            <Text className={`text-center text-[11.5px] leading-[17px] ${surface.texte}`}>
               {t(
                 'En créant un compte, vous acceptez nos',
                 'By creating an account, you agree to our',
               )}{' '}
-              <Link href="/legal/terms" className="font-semibold text-white underline">
+              <Link href="/legal/terms" className={`font-semibold underline ${surface.lien}`}>
                 {t('conditions générales', 'terms of service')}
               </Link>{' '}
               {t('et notre', 'and our')}{' '}
               <Link
                 href="/legal/privacy"
-                className="font-semibold text-white underline"
+                className={`font-semibold underline ${surface.lien}`}
               >
                 {t('politique de confidentialité', 'privacy policy')}
               </Link>
@@ -320,7 +323,7 @@ export default function RegisterScreen() {
             </Text>
 
             {register.errorMessage ? (
-              <FormError message={register.errorMessage} light />
+              <FormError message={register.errorMessage} light={surface.sombre} />
             ) : null}
 
             <Button
@@ -332,10 +335,10 @@ export default function RegisterScreen() {
             </Button>
           </View>
 
-          <GoogleSignInButton light />
+          <GoogleSignInButton light={surface.sombre} />
 
           <View className="flex-row items-center justify-center gap-1">
-            <Text className="text-sm text-white">
+            <Text className={`text-sm ${surface.texte}`}>
               {t('Déjà un compte ?', 'Already have an account?')}
             </Text>
             <Link
@@ -343,7 +346,7 @@ export default function RegisterScreen() {
                 pathname: '/login',
                 params: returnTo ? { returnTo } : {},
               }}
-              className="text-sm font-semibold text-white underline"
+              className={`text-sm font-semibold underline ${surface.lien}`}
             >
               {t('Se connecter', 'Sign in')}
             </Link>
@@ -353,8 +356,9 @@ export default function RegisterScreen() {
               langue est déjà en haut, à côté de la flèche de retour : en
               afficher un second ici ne ferait que dédoubler le réglage. */}
         </View>
-        <AuthFooter light />
+        <AuthFooter light={surface.sombre} />
       </Screen>
+      </AuthSplit>
     </KeyboardAvoidingView>
   );
 }

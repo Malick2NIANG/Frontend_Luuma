@@ -78,7 +78,8 @@ export const PRODUCT_CATEGORY_LABELS: Record<ProductCategory, string> = {
 export interface User {
   id: string;
   email: string;
-  phone: string;
+  /** `null` pour un compte créé par Google, tant que le numéro n'est pas saisi. */
+  phone: string | null;
   name: string;
   avatar?: string | null;
   emailVerified: boolean;

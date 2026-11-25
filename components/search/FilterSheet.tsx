@@ -128,99 +128,7 @@ export function FilterSheet({
           </View>
 
           <ScrollView>
-            <Section title={t('Catégorie', 'Category')}>
-              <View className="flex-row flex-wrap gap-1.5">
-                {PRODUCT_CATEGORIES.map((category: ProductCategory) => (
-                  <Chip
-                    key={category}
-                    label={t(
-                      CATEGORY_SHORT_LABELS[category],
-                      CATEGORY_LABELS_EN[category],
-                    )}
-                    active={draft.category === category}
-                    onPress={() => toggle('category', category)}
-                  />
-                ))}
-              </View>
-            </Section>
-
-            <Section title={t('Prix (FCFA)', 'Price (CFA francs)')}>
-              <View className="flex-row items-center gap-2.5">
-                <NumberField
-                  value={draft.minPrice}
-                  placeholder={t('Minimum', 'Minimum')}
-                  onChange={(value) => patch({ minPrice: value })}
-                />
-                <Text className="text-gray-400">—</Text>
-                <NumberField
-                  value={draft.maxPrice}
-                  placeholder={t('Maximum', 'Maximum')}
-                  onChange={(value) => patch({ maxPrice: value })}
-                />
-              </View>
-            </Section>
-
-            <Section
-              title={t(
-                'Poids — il détermine le prix du transport',
-                'Weight — it determines the shipping cost',
-              )}
-            >
-              <View className="flex-row flex-wrap gap-1.5">
-                {WEIGHT_BUCKETS.map((bucket) => (
-                  <Chip
-                    key={bucket.label}
-                    label={t(bucket.label, bucket.value === undefined ? 'Any' : bucket.label)}
-                    active={draft.maxWeight === bucket.value}
-                    onPress={() => patch({ maxWeight: bucket.value })}
-                  />
-                ))}
-              </View>
-            </Section>
-
-            <Section title={t('Ville du commerçant', 'Merchant city')}>
-              <View className="flex-row flex-wrap gap-1.5">
-                {CITIES.map((city) => (
-                  <Chip
-                    key={city}
-                    label={city}
-                    active={draft.city === city}
-                    onPress={() => toggle('city', city)}
-                  />
-                ))}
-              </View>
-            </Section>
-
-            <Section title={t('Note du vendeur', 'Seller rating')}>
-              <View className="flex-row flex-wrap gap-1.5">
-                {RATINGS.map((rating) => (
-                  <Chip
-                    key={rating.label}
-                    label={`★ ${t(
-                      rating.label,
-                      rating.value === undefined
-                        ? 'All'
-                        : `${rating.value}+`,
-                    )}`}
-                    active={draft.minRating === rating.value}
-                    onPress={() => patch({ minRating: rating.value })}
-                  />
-                ))}
-              </View>
-            </Section>
-
-            <Section title={t('Trier par', 'Sort by')} last>
-              <View className="flex-row flex-wrap gap-1.5">
-                {SORT_OPTIONS.map((option: SortOption) => (
-                  <Chip
-                    key={option}
-                    label={t(SORT_LABELS[option], SORT_LABELS_EN[option])}
-                    active={draft.sort === option}
-                    onPress={() => patch({ sort: option })}
-                  />
-                ))}
-              </View>
-            </Section>
+            <FilterFields value={draft} patch={patch} toggle={toggle} />
           </ScrollView>
 
           <View className="border-t border-gray-100 px-4 pb-5 pt-3">
@@ -244,6 +152,172 @@ export function FilterSheet({
         </View>
       </View>
     </Modal>
+  );
+}
+
+type Patch = (values: Partial<SearchFilters>) => void;
+type Toggle = <K extends keyof SearchFilters>(key: K, value: SearchFilters[K]) => void;
+
+/** Les champs de filtre, partagés par le tiroir (téléphone) et le panneau (ordinateur). */
+function FilterFields({
+  value,
+  patch,
+  toggle,
+}: {
+  value: SearchFilters;
+  patch: Patch;
+  toggle: Toggle;
+}) {
+  const { t } = useAppLanguage();
+  return (
+    <>
+    <Section title={t('Catégorie', 'Category')}>
+      <View className="flex-row flex-wrap gap-1.5">
+        {PRODUCT_CATEGORIES.map((category: ProductCategory) => (
+          <Chip
+            key={category}
+            label={t(
+              CATEGORY_SHORT_LABELS[category],
+              CATEGORY_LABELS_EN[category],
+            )}
+            active={value.category === category}
+            onPress={() => toggle('category', category)}
+          />
+        ))}
+      </View>
+    </Section>
+
+    <Section title={t('Prix (FCFA)', 'Price (CFA francs)')}>
+      <View className="flex-row items-center gap-2.5">
+        <NumberField
+          value={value.minPrice}
+          placeholder={t('Minimum', 'Minimum')}
+          onChange={(value) => patch({ minPrice: value })}
+        />
+        <Text className="text-gray-400">—</Text>
+        <NumberField
+          value={value.maxPrice}
+          placeholder={t('Maximum', 'Maximum')}
+          onChange={(value) => patch({ maxPrice: value })}
+        />
+      </View>
+    </Section>
+
+    <Section
+      title={t(
+        'Poids — il détermine le prix du transport',
+        'Weight — it determines the shipping cost',
+      )}
+    >
+      <View className="flex-row flex-wrap gap-1.5">
+        {WEIGHT_BUCKETS.map((bucket) => (
+          <Chip
+            key={bucket.label}
+            label={t(bucket.label, bucket.value === undefined ? 'Any' : bucket.label)}
+            active={value.maxWeight === bucket.value}
+            onPress={() => patch({ maxWeight: bucket.value })}
+          />
+        ))}
+      </View>
+    </Section>
+
+    <Section title={t('Ville du commerçant', 'Merchant city')}>
+      <View className="flex-row flex-wrap gap-1.5">
+        {CITIES.map((city) => (
+          <Chip
+            key={city}
+            label={city}
+            active={value.city === city}
+            onPress={() => toggle('city', city)}
+          />
+        ))}
+      </View>
+    </Section>
+
+    <Section title={t('Note du vendeur', 'Seller rating')}>
+      <View className="flex-row flex-wrap gap-1.5">
+        {RATINGS.map((rating) => (
+          <Chip
+            key={rating.label}
+            label={`★ ${t(
+              rating.label,
+              rating.value === undefined
+                ? 'All'
+                : `${rating.value}+`,
+            )}`}
+            active={value.minRating === rating.value}
+            onPress={() => patch({ minRating: rating.value })}
+          />
+        ))}
+      </View>
+    </Section>
+
+    <Section title={t('Trier par', 'Sort by')} last>
+      <View className="flex-row flex-wrap gap-1.5">
+        {SORT_OPTIONS.map((option: SortOption) => (
+          <Chip
+            key={option}
+            label={t(SORT_LABELS[option], SORT_LABELS_EN[option])}
+            active={value.sort === option}
+            onPress={() => patch({ sort: option })}
+          />
+        ))}
+      </View>
+    </Section>
+    </>
+  );
+}
+
+/**
+ * Panneau de filtres permanent, à gauche de la grille sur ordinateur — comme
+ * Marketplace sur Facebook.
+ *
+ * Contrairement au tiroir, les filtres s'appliquent AU FIL des choix : la
+ * grille est à côté, on voit l'effet tout de suite ; un bouton « Appliquer »
+ * n'aurait plus de raison d'être.
+ */
+export function FilterPanel({
+  filters,
+  onChange,
+  resultCount,
+}: {
+  filters: SearchFilters;
+  onChange: (filters: SearchFilters) => void;
+  resultCount?: number;
+}) {
+  const { t } = useAppLanguage();
+  const patch: Patch = (values) => onChange({ ...filters, ...values });
+  const toggle: Toggle = (key, value) =>
+    patch({ [key]: filters[key] === value ? undefined : value } as Partial<SearchFilters>);
+
+  return (
+    <View className="flex-1">
+      <View className="flex-row items-center px-4 pb-1 pt-3">
+        <Text className="text-[15px] font-bold text-gray-900">
+          {t('Filtres', 'Filters')}
+        </Text>
+        <Pressable
+          className="ml-auto"
+          onPress={() => onChange({ ...EMPTY_FILTERS })}
+          accessibilityRole="button"
+        >
+          <Text className="text-xs font-semibold text-primary">
+            {t('Tout effacer', 'Clear all')}
+          </Text>
+        </Pressable>
+      </View>
+      {resultCount !== undefined ? (
+        <Text className="px-4 pb-1 text-xs text-gray-500">
+          {t(
+            `${resultCount} résultat${resultCount > 1 ? 's' : ''}`,
+            `${resultCount} result${resultCount === 1 ? '' : 's'}`,
+          )}
+        </Text>
+      ) : null}
+      <ScrollView>
+        <FilterFields value={filters} patch={patch} toggle={toggle} />
+      </ScrollView>
+    </View>
   );
 }
 

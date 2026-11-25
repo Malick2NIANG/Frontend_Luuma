@@ -2,6 +2,7 @@
   "expo": {
     "name": "Luuma",
     "slug": "luuma",
+    "scheme": "luuma",
     "version": "1.0.0",
     "orientation": "default",
     "icon": "./assets/Icon.png",
@@ -33,7 +34,12 @@
       ]
     },
     "web": {
-      "favicon": "./assets/logo-mark.png"
+      "favicon": "./assets/logo-mark.png",
+      "name": "Luuma",
+      "shortName": "Luuma",
+      "themeColor": "#0B5C38",
+      "backgroundColor": "#FFFFFF",
+      "lang": "fr"
     },
     "plugins": [
       "expo-router",
@@ -55,9 +61,10 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/logo-mark.png",
+          "image": "./assets/splash-blank.png",
           "resizeMode": "contain",
-          "backgroundColor": "#FFFFFF"
+          "backgroundColor": "#FFFFFF",
+          "imageWidth": 1
         }
       ]
     ]

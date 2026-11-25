@@ -10,7 +10,7 @@ import {
   View,
 } from 'react-native';
 import { BrandLogo } from '@/components/BrandLogo';
-import { AuthBackgroundCarousel } from '@/components/auth/AuthBackgroundCarousel';
+import { AuthSplit, useAuthSurface } from '@/components/auth/AuthSplit';
 import { AuthFooter } from '@/components/auth/AuthFooter';
 import { LanguageToggle } from '@/components/auth/LanguageToggle';
 import { GoogleSignInButton } from '@/components/auth/GoogleSignInButton';
@@ -19,6 +19,7 @@ import { FormError } from '@/components/ui/FormError';
 import { Input, type InputHandle } from '@/components/ui/Input';
 import { Screen } from '@/components/ui/Screen';
 import { useLogin } from '@/hooks/useAuth';
+import { useGoBack } from '@/hooks/useGoBack';
 import { useAppLanguage } from '@/lib/appLanguage';
 import { isValidEmail } from '@/lib/validators';
 import { useAuthStore } from '@/store/auth.store';
@@ -33,6 +34,11 @@ export default function LoginScreen() {
   const router = useRouter();
   const login = useLogin();
   const { t } = useAppLanguage();
+  // Texte blanc sur les photos (téléphone, tablette), foncé sur le panneau
+  // blanc de l'écran partagé (ordinateur).
+  const surface = useAuthSurface();
+  // Vers l'écran précédent, sinon le fil (arrivée par lien direct).
+  const retour = useGoBack('/(app)/(tabs)');
   const hasSavedSession = useAuthStore((state) => state.hasSavedSession);
   const biometricEnabled = useAuthStore((state) => state.biometricEnabled);
   const unlockWithBiometrics = useAuthStore(
@@ -166,7 +172,7 @@ export default function LoginScreen() {
       style={{ flex: 1 }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <AuthBackgroundCarousel />
+      <AuthSplit>
       <Screen
         scroll
         contentContainerClassName="flex-grow"
@@ -175,14 +181,30 @@ export default function LoginScreen() {
         style={{ zIndex: 1 }}
       >
         <View className="flex-1">
+          {/* Retour à gauche, langue à droite — comme l'inscription. Sans
+              flèche, un visiteur arrivé ici depuis le fil n'avait aucun moyen
+              d'y revenir sur le web, où le geste de retour n'existe pas. */}
+          <View className="w-full flex-row items-center justify-between">
+            <Pressable
+              onPress={retour}
+              hitSlop={10}
+              accessibilityRole="button"
+              accessibilityLabel={t("Retour à l'accueil", 'Back to home')}
+              className="py-1"
+            >
+              <Ionicons name="arrow-back" size={22} color={surface.icone} />
+            </Pressable>
+            <LanguageToggle light={surface.sombre} />
+          </View>
+
             <View className="flex-1 items-center justify-center gap-4">
-              <BrandLogo width={80} height={56} light />
+              <BrandLogo width={80} height={56} light={surface.sombre} />
 
               <View className="w-full gap-1">
-                <Text className="text-center text-2xl font-bold text-white">
+                <Text className={`text-center text-2xl font-bold ${surface.titre}`}>
                   {greeting}
                 </Text>
-                <Text className="text-center text-sm text-white">
+                <Text className={`text-center text-sm ${surface.texte}`}>
                   {t(
                     'Connectez-vous pour continuer sur Luuma',
                     'Sign in to continue to Luuma',
@@ -193,7 +215,7 @@ export default function LoginScreen() {
               <View className="w-full gap-3">
                 <Input
                   label="Email"
-                  appearance="light"
+                  appearance={surface.sombre ? 'light' : 'default'}
                   placeholder={t('vous@exemple.com', 'you@example.com')}
                   autoCapitalize="none"
                   autoComplete="email"
@@ -211,7 +233,7 @@ export default function LoginScreen() {
                   <Input
                     ref={passwordRef}
                     label={t('Mot de passe', 'Password')}
-                    appearance="light"
+                    appearance={surface.sombre ? 'light' : 'default'}
                     placeholder="••••••••"
                     secureTextEntry
                     autoCapitalize="none"
@@ -229,7 +251,7 @@ export default function LoginScreen() {
                       accessibilityRole="link"
                       className="min-h-11 min-w-11 self-end justify-center px-2"
                     >
-                      <Text className="text-[13px] font-semibold text-white underline">
+                      <Text className={`text-[13px] font-semibold underline ${surface.lien}`}>
                         {t('Mot de passe oublié ?', 'Forgot password?')}
                       </Text>
                     </Pressable>
@@ -237,7 +259,7 @@ export default function LoginScreen() {
                 </View>
 
                 {login.errorMessage ? (
-                  <FormError message={login.errorMessage} light />
+                  <FormError message={login.errorMessage} light={surface.sombre} />
                 ) : null}
 
                 <View className="w-full flex-row items-center gap-2">
@@ -265,21 +287,21 @@ export default function LoginScreen() {
                               'Unlock with your fingerprint',
                             )
                       }
-                      className="h-12 w-12 items-center justify-center rounded-full border border-white/50 bg-white/10"
+                      className={`h-12 w-12 items-center justify-center rounded-full border ${surface.bouton}`}
                     >
-                      <Ionicons name={biometricIcon} size={23} color="#FFFFFF" />
+                      <Ionicons name={biometricIcon} size={23} color={surface.icone} />
                     </Pressable>
                   ) : null}
                 </View>
                 {biometricError ? (
-                  <FormError message={biometricError} light />
+                  <FormError message={biometricError} light={surface.sombre} />
                 ) : null}
               </View>
 
-              <GoogleSignInButton light />
+              <GoogleSignInButton light={surface.sombre} />
 
               <View className="flex-row items-center justify-center gap-1">
-                <Text className="text-sm text-white">
+                <Text className={`text-sm ${surface.texte}`}>
                   {t('Pas encore de compte ?', 'Don’t have an account?')}
                 </Text>
                 <Link
@@ -287,7 +309,7 @@ export default function LoginScreen() {
                     pathname: '/register',
                     params: returnTo ? { returnTo } : {},
                   }}
-                  className="text-sm font-semibold text-white underline"
+                  className={`text-sm font-semibold underline ${surface.lien}`}
                 >
                   {t('Créer un compte', 'Create an account')}
                 </Link>
@@ -299,15 +321,13 @@ export default function LoginScreen() {
                   ou qu'une action l'exige — commander, écrire à un vendeur,
                   ouvrir une boutique. La visite n'est plus une dérogation à
                   demander, c'est l'état par défaut. */}
-              <View className="items-center">
-                <LanguageToggle light />
-              </View>
             </View>
           <View className="mt-3">
-            <AuthFooter light />
+            <AuthFooter light={surface.sombre} />
           </View>
         </View>
       </Screen>
+      </AuthSplit>
     </KeyboardAvoidingView>
   );
 }

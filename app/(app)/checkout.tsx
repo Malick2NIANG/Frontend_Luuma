@@ -1,6 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useAddresses } from '@/hooks/useAddresses';
 import { useGoBack } from '@/hooks/useGoBack';
 import { useRequireAuth } from '@/hooks/useRequireAuth';
 import {
@@ -61,6 +62,30 @@ export default function CheckoutScreen() {
   const [address, setAddress] = useState('');
   const [city, setCity] = useState('');
   const [country, setCountry] = useState('');
+
+  /**
+   * L'adresse enregistrée remplit le formulaire, elle ne le remplace pas.
+   *
+   * On retapait son adresse complète à chaque commande, alors qu'elle était
+   * en base. Les champs restent modifiables : on commande souvent pour
+   * quelqu'un d'autre, ou vers une adresse de passage.
+   *
+   * Pré-remplir UNE SEULE FOIS, et seulement sur des champs vides : écraser
+   * une saisie en cours parce qu'une requête se rafraîchit serait la pire
+   * façon de « rendre service ».
+   */
+  const { defaultAddress } = useAddresses();
+  const [prefilled, setPrefilled] = useState(false);
+
+  useEffect(() => {
+    if (prefilled || !defaultAddress) return;
+    if (address || city || country) return;
+
+    setAddress(defaultAddress.address);
+    setCity(defaultAddress.city);
+    setCountry(defaultAddress.country);
+    setPrefilled(true);
+  }, [defaultAddress, prefilled, address, city, country]);
   const [touched, setTouched] = useState(false);
 
   const totalWeight = cartTotalWeight(items);

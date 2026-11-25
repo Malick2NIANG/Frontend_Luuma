@@ -47,7 +47,22 @@ const ZOOM_TO = 1.07;
  * qu'on puisse le nommer. Il tourne sur le fil de l'interface graphique via
  * Reanimated, sans réveiller JavaScript à chaque image.
  */
-export function AuthBackgroundCarousel() {
+export function AuthBackgroundCarousel({
+  voile = 'fort',
+  onChange,
+}: {
+  /**
+   * Appelé au début de chaque fondu avec le numéro de la vue qui arrive
+   * (0, 1, 2…, sans fin) — pour synchroniser un texte posé sur les photos.
+   */
+  onChange?: (vue: number) => void;
+  /**
+   * `fort` : du texte blanc est posé sur les photos (téléphone, tablette).
+   * `leger` : les photos sont seules, à côté du formulaire (ordinateur) —
+   * un voile épais les éteindrait sans rien rendre lisible.
+   */
+  voile?: 'fort' | 'leger';
+} = {}) {
   const [frontIndex, setFrontIndex] = useState(0);
   const [backIndex, setBackIndex] = useState(1);
 
@@ -63,6 +78,9 @@ export function AuthBackgroundCarousel() {
    * provoquer de rendu, donc l'intervalle n'est monté qu'une seule fois.
    */
   const frontVisible = useRef(true);
+  const vue = useRef(0);
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
   const frontIndexRef = useRef(0);
   const backIndexRef = useRef(1);
 
@@ -96,6 +114,8 @@ export function AuthBackgroundCarousel() {
       // qu'il est devenu invisible. Rien n'est démonté, donc rien n'a à être
       // redécodé dans l'urgence.
       const revealBack = frontVisible.current;
+      vue.current += 1;
+      onChangeRef.current?.(vue.current);
 
       fade.value = withTiming(revealBack ? 1 : 0, {
         duration: FADE_MS,
@@ -161,6 +181,12 @@ export function AuthBackgroundCarousel() {
         </Animated.View>
       </Animated.View>
 
+      {voile === 'leger' ? (
+        <View
+          style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(8, 48, 28, 0.12)' }]}
+        />
+      ) : (
+        <>
       {/* Deux voiles superposés plutôt qu'un seul uniforme.
           Le texte de ces écrans est entièrement blanc : sa lisibilité
           dépendait donc de la photo affichée, et une image claire — ciel,
@@ -189,6 +215,8 @@ export function AuthBackgroundCarousel() {
         </Defs>
         <Rect x="0" y="0" width="100%" height="100%" fill="url(#authVeil)" />
       </Svg>
+        </>
+      )}
     </View>
   );
 }

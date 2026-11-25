@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useIsFocused, useLocalSearchParams, useRouter } from 'expo-router';
 import { useGoBack } from '@/hooks/useGoBack';
 import { Pressable, ScrollView, Share, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -41,6 +41,7 @@ export default function ProductDetailScreen() {
   const { t } = useAppLanguage();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const isFocused = useIsFocused();
   const goBack = useGoBack('/(app)/(tabs)');
 
   const { data: product, isLoading, isError, refetch } = useProduct(id);
@@ -162,7 +163,13 @@ export default function ProductDetailScreen() {
       </View>
 
       <ScrollView contentContainerClassName="pb-4">
-        <MediaCarousel media={product.images} aspectRatio={4 / 3} openOnPress />
+        <MediaCarousel
+          media={product.images}
+          aspectRatio={4 / 3}
+          openOnPress
+          // La vidéo s'arrête quand on quitte la fiche (panier, boutique…).
+          active={isFocused}
+        />
 
         <View className="px-4 pt-4">
           <Text className="text-xl font-bold text-gray-900">{product.name}</Text>

@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { View } from 'react-native';
+import { useVideoSound } from '@/store/videoSound.store';
 
 export interface VideoItemProps {
   uri: string;
@@ -11,16 +12,9 @@ export interface VideoItemProps {
 }
 
 /**
- * Lecteur vidéo, utilisé UNIQUEMENT en plein écran.
+ * Lecteur vidéo du plein écran, avec les contrôles natifs (avance, son).
  *
- * Le carrousel, lui, n'affiche qu'une vignette sombre avec un bouton de
- * lecture : charger la vidéo dans le fil ou sur la fiche coûterait plusieurs
- * mégaoctets à quelqu'un qui ne fera peut-être que passer. Sur une connexion
- * sénégalaise ou en itinérance depuis l'Europe, ce n'est pas un détail — c'est
- * du forfait dépensé sans qu'on l'ait demandé.
- *
- * Les octets ne partent donc que lorsque l'utilisateur ouvre la visionneuse,
- * c'est-à-dire quand il a explicitement voulu voir.
+ * Dans le fil et sur la fiche, c'est InlineVideo qui lit les vidéos.
  */
 export function VideoItem({
   uri,
@@ -30,10 +24,10 @@ export function VideoItem({
 }: VideoItemProps) {
   const player = useVideoPlayer(uri, (instance) => {
     instance.loop = true;
-    // En sourdine au départ : une vidéo qui démarre à plein volume dans un
-    // lieu public est la première raison de refermer une application.
-    // Les contrôles natifs permettent de rétablir le son.
-    instance.muted = true;
+    // Même réglage du son que dans le fil : si la personne l'a activé sur une
+    // vidéo, le plein écran ne la remet pas en sourdine. Les contrôles natifs
+    // permettent de le changer ici aussi.
+    instance.muted = useVideoSound.getState().muted;
   });
 
   useEffect(() => {

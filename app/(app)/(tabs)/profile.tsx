@@ -79,8 +79,7 @@ export default function ProfileScreen() {
     return (
       <SafeAreaView className="flex-1 bg-white" edges={['top']}>
         {/* Même en-tête que l'écran connecté, bouton de réglages compris :
-            `settings.tsx` se protège lui-même via `useRequireAuth`, un
-            visiteur qui le touche est simplement renvoyé à la connexion. */}
+            un visiteur y trouve ses préférences (pays et devise). */}
         <View className="flex-row items-center border-b border-gray-100 px-4 pb-2.5 pt-1">
           <Text className="text-lg font-bold text-gray-900">{t('Profil', 'Profile')}</Text>
           <Pressable

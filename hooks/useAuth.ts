@@ -2,7 +2,11 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
+import { useState } from 'react';
+import * as Linking from 'expo-linking';
+import * as WebBrowser from 'expo-web-browser';
 import { Alert, Platform } from 'react-native';
+import { BASE_URL } from '@/constants/api';
 import { api } from '@/lib/api';
 import { useAppLanguage } from '@/lib/appLanguage';
 import { useAuthStore } from '@/store/auth.store';
@@ -15,7 +19,7 @@ import type { User } from '@/types/api.types';
 interface AuthUser {
   id: string;
   email: string;
-  phone: string;
+  phone: string | null;
   name: string;
   image: string | null;
   emailVerified: boolean;
@@ -282,6 +286,151 @@ export function useRegister() {
   return {
     ...mutation,
     errorMessage: mutation.error ? getAuthErrorMessage(mutation.error, t) : null,
+  };
+}
+
+// --- Connexion Google ---------------------------------------------------------
+
+interface SessionResponse {
+  user: AuthUser;
+  session: { token: string };
+}
+
+/**
+ * Extrait le jeton de session du cookie renvoyé dans l'adresse de retour.
+ *
+ * Expression régulière plutôt que `new URL()` : l'implémentation de `URL` de
+ * React Native ne gère pas `searchParams` sur toutes les versions.
+ */
+export function jetonDepuisRetour(url: string): string | null {
+  const brut = /[?&]cookie=([^&#]+)/.exec(url)?.[1];
+  if (!brut) return null;
+  const cookie = decodeURIComponent(brut);
+  const valeur = /(?:^|[\s,;])(?:__Secure-)?better-auth\.session_token=([^;,\s]+)/.exec(cookie)?.[1];
+  return valeur ? decodeURIComponent(valeur) : null;
+}
+
+/** Lit la session pour un jeton donné — `null` si le serveur ne la reconnaît pas. */
+export async function sessionPourJeton(
+  token: string | null,
+): Promise<SessionResponse | null> {
+  const { data } = await api.get<SessionResponse | null>('/api/auth/get-session', {
+    // Sur le web, sans jeton : c'est le cookie posé par le retour Google qui
+    // identifie la session.
+    ...(token ? { headers: { Authorization: `Bearer ${token}` } } : {}),
+    withCredentials: true,
+  });
+  return data?.user ? data : null;
+}
+
+/**
+ * « Continuer avec Google ».
+ *
+ * WEB : redirection classique. Google renvoie vers /auth/google, qui lit la
+ * session posée en cookie et la convertit en jeton (voir app/auth/google.tsx).
+ *
+ * TÉLÉPHONE : le parcours s'ouvre dans un navigateur d'authentification. Le
+ * serveur ajoute le cookie de session à l'adresse de retour `luuma://…`
+ * (plugin `expo` de better-auth), d'où on extrait le jeton.
+ *
+ * Dans les deux cas, on finit exactement comme une connexion par mot de
+ * passe : jeton enregistré, cache vidé, proposition de la biométrie.
+ */
+export function useGoogleSignIn() {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const setAuth = useAuthStore((state) => state.setAuth);
+  const { t } = useAppLanguage();
+  const destination = usePostAuthDestination();
+  const [pending, setPending] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const messageErreur = (error: unknown): string => {
+    if (axios.isAxiosError(error)) {
+      if (!error.response) {
+        return t(NETWORK_ERROR_MESSAGE[0], NETWORK_ERROR_MESSAGE[1]);
+      }
+      // Fournisseur absent : GOOGLE_CLIENT_ID n'est pas renseigné côté API.
+      if (error.response.status === 404 || error.response.status === 400) {
+        return t(
+          "La connexion Google n'est pas encore disponible.",
+          'Google sign-in is not available yet.',
+        );
+      }
+    }
+    return t(
+      'La connexion Google a échoué. Réessayez.',
+      'Google sign-in failed. Please try again.',
+    );
+  };
+
+  const start = async () => {
+    setErrorMessage(null);
+    setPending(true);
+    try {
+      if (Platform.OS === 'web') {
+        const retour = `${window.location.origin}/auth/google?returnTo=${encodeURIComponent(String(destination))}`;
+        const { data } = await api.post<{ url: string }>(
+          '/api/auth/sign-in/social',
+          {
+            provider: 'google',
+            callbackURL: retour,
+            errorCallbackURL: retour,
+            disableRedirect: true,
+          },
+          { withCredentials: true },
+        );
+        window.location.assign(data.url);
+        return;
+      }
+
+      const retour = Linking.createURL('auth/google');
+      const { data } = await api.post<{ url: string }>(
+        '/api/auth/sign-in/social',
+        { provider: 'google', callbackURL: retour, disableRedirect: true },
+        // Une application native n'envoie pas d'en-tête Origin : le plugin
+        // `expo` du serveur lit celui-ci à la place pour vérifier l'appelant.
+        { headers: { 'expo-origin': Linking.createURL('') } },
+      );
+
+      // Le relais pose le cookie d'état dans le navigateur d'authentification
+      // avant de partir chez Google : sans lui, le retour serait refusé.
+      const relais = `${BASE_URL}/api/auth/expo-authorization-proxy?authorizationURL=${encodeURIComponent(data.url)}`;
+      const result = await WebBrowser.openAuthSessionAsync(relais, retour);
+      if (result.type !== 'success') return; // abandon : rien à signaler
+
+      const token = jetonDepuisRetour(result.url);
+      const session = token ? await sessionPourJeton(token) : null;
+      if (!token || !session) throw new Error('Session Google introuvable');
+
+      queryClient.clear();
+      setAuth(toUser(session.user), token);
+      router.replace(destination);
+      offerBiometricSetup(t);
+    } catch (error) {
+      setErrorMessage(messageErreur(error));
+    } finally {
+      setPending(false);
+    }
+  };
+
+  return { start, pending, errorMessage };
+}
+
+/**
+ * Termine une connexion Google sur le web, au retour de Google.
+ * Exposé pour app/auth/google.tsx.
+ */
+export function useFinishGoogleWebSignIn() {
+  const queryClient = useQueryClient();
+  const setAuth = useAuthStore((state) => state.setAuth);
+
+  return async (): Promise<boolean> => {
+    const session = await sessionPourJeton(null);
+    if (!session) return false;
+    queryClient.clear();
+    setAuth(toUser(session.user), session.session.token);
+    return true;
   };
 }
 

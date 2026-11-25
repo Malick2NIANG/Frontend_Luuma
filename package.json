@@ -27,6 +27,7 @@
     "expo-status-bar": "~58.0.4",
     "expo-updates": "~58.0.21",
     "expo-video": "~58.0.13",
+    "expo-web-browser": "~58.0.7",
     "nativewind": "^4.2.6",
     "react": "19.3.0",
     "react-dom": "19.3.0",
@@ -52,7 +53,8 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "build": "expo export --platform android"
+    "build": "expo export --platform android",
+    "test": "node --test \"lib/**/*.test.mjs\""
   },
   "private": true
 }

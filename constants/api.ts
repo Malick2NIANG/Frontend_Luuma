@@ -25,6 +25,14 @@ function isLocalHost(hostname: string): boolean {
 
 function resolveBaseUrl(): string {
   if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    // Image Docker : nginx relaie /api, /socket.io et /storage vers l'API et
+    // MinIO, sur le même port que l'application. L'API est donc toujours à
+    // l'adresse de la page — en local comme derrière un tunnel, où un seul
+    // port forwardé suffit pour tester depuis un téléphone.
+    if (process.env.EXPO_PUBLIC_API_SAME_ORIGIN === 'true') {
+      return window.location.origin;
+    }
+
     // Servie depuis cette machine : l'API est forcément sur le même hôte.
     // Déduire plutôt que lire la variable d'environnement évite l'écueil
     // classique en développement — une IP LAN figée dans .env pour tester au

@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useIsFocused, useLocalSearchParams, useRouter } from 'expo-router';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { MediaCarousel } from '@/components/media/MediaCarousel';
@@ -47,6 +47,7 @@ export default function MerchantProductScreen() {
   const { t } = useAppLanguage();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const isFocused = useIsFocused();
   const goBack = useGoBack('/(app)/(tabs)/shop');
   const { isReady } = useRequireAuth('/(app)/(tabs)/shop');
 
@@ -121,7 +122,13 @@ export default function MerchantProductScreen() {
       ) : (
         <ScrollView contentContainerClassName="pb-10">
           {product.images.length > 0 ? (
-            <MediaCarousel media={product.images} aspectRatio={4 / 3} openOnPress />
+            <MediaCarousel
+          media={product.images}
+          aspectRatio={4 / 3}
+          openOnPress
+          // La vidéo s'arrête quand on quitte la fiche (panier, boutique…).
+          active={isFocused}
+        />
           ) : null}
 
           <View className="px-3.5">

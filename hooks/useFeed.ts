@@ -41,10 +41,24 @@ export function useFeed(filters: FeedFilters = {}) {
 
   const { data, hasNextPage, isFetchingNextPage, fetchNextPage } = query;
 
-  const items: FeedItem[] = useMemo(
-    () => data?.pages.flatMap((page) => page.items) ?? [],
-    [data],
-  );
+  /**
+   * Pages mises bout à bout, sans doublon.
+   *
+   * La première page peut contenir des suggestions « Pour vous » plus
+   * anciennes que le reste ; le défilement chronologique les retrouve ensuite
+   * à leur date. On garde la première apparition — en haut, là où elle a été
+   * mise exprès — et la liste ne reçoit jamais deux fois la même clé.
+   */
+  const items: FeedItem[] = useMemo(() => {
+    const vus = new Set<string>();
+    const resultat: FeedItem[] = [];
+    for (const item of data?.pages.flatMap((page) => page.items) ?? []) {
+      if (vus.has(item.id)) continue;
+      vus.add(item.id);
+      resultat.push(item);
+    }
+    return resultat;
+  }, [data]);
 
   // Enchaîne tant que le serveur annonce une suite sans rien avoir livré.
   useEffect(() => {

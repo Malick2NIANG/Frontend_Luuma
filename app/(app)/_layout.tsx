@@ -2,10 +2,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { Stack } from 'expo-router';
 import { Pressable, Text, View } from 'react-native';
 import { EmailVerificationGate } from '@/components/auth/EmailVerificationGate';
+import { PhoneGate } from '@/components/auth/PhoneGate';
 import { TermsGate } from '@/components/legal/TermsGate';
 import { Button } from '@/components/ui/Button';
 import { colors } from '@/constants/colors';
 import { useAuth, useLogout } from '@/hooks/useAuth';
+import { LARGEUR_COLONNE, useMiseEnPage } from '@/hooks/useContentWidth';
 import { useMe } from '@/hooks/useMe';
 
 /**
@@ -33,6 +35,7 @@ export default function AppLayout() {
   const { isAuthenticated, isHydrated } = useAuth();
   const { me, isError: meFailed, refetch: retryMe, isFetching } = useMe();
   const logout = useLogout();
+  const surOrdinateur = useMiseEnPage().barreLaterale;
 
   // Tant que le jeton n'a pas été relu depuis le stockage sécurisé, on ne sait
   // pas si la session existe. Afficher le fil maintenant ferait apparaître
@@ -106,12 +109,17 @@ export default function AppLayout() {
    * créera un compte, les deux écrans l'attendront.
    */
   const needsEmailVerification = Boolean(me && !me.emailVerified);
+  // Compte créé par Google : pas de numéro. Demandé avant les conditions —
+  // l'ordre d'une inscription par email, où le numéro vient en premier.
+  const needsPhone = Boolean(me && !me.phone);
   const needsTerms = Boolean(me?.legal.needsAcceptance);
 
   return (
     <>
       {needsEmailVerification ? (
         <EmailVerificationGate />
+      ) : needsPhone ? (
+        <PhoneGate />
       ) : needsTerms ? (
         <TermsGate />
       ) : null}
@@ -119,7 +127,29 @@ export default function AppLayout() {
       {/* L'arbre est monté DERRIÈRE les écrans bloquants, pas à leur place :
           le fil charge ses données pendant ce temps, et l'application est
           déjà prête au moment où le dernier écran se ferme. */}
-      <Stack screenOptions={{ headerShown: false }} />
+      <Stack
+        screenOptions={{ headerShown: false }}
+        /**
+         * Sur ordinateur, les écrans hors onglets (fiche produit, panier,
+         * commande, réglages…) tiennent dans la même colonne de 680 px que le
+         * fil. Sans ce cadre, la photo restait centrée tandis que le titre, le
+         * prix et la barre « Ajouter au panier » s'étalaient sur toute la
+         * largeur — plus rien n'était aligné. Les onglets, eux, ont leur barre
+         * latérale à côté de la colonne et gardent toute la largeur.
+         */
+        screenLayout={({ children, route }) =>
+          surOrdinateur && route.name !== '(tabs)' ? (
+            <View
+              className="flex-1 bg-white"
+              style={{ width: '100%', maxWidth: LARGEUR_COLONNE, alignSelf: 'center' }}
+            >
+              {children}
+            </View>
+          ) : (
+            children
+          )
+        }
+      />
     </>
   );
 }
