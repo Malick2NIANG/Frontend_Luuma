@@ -3,6 +3,7 @@ import { Stack } from 'expo-router';
 import { Pressable, Text, View } from 'react-native';
 import { EmailVerificationGate } from '@/components/auth/EmailVerificationGate';
 import { PhoneGate } from '@/components/auth/PhoneGate';
+import { UnlockBanner } from '@/components/auth/UnlockBanner';
 import { TermsGate } from '@/components/legal/TermsGate';
 import { Button } from '@/components/ui/Button';
 import { colors } from '@/constants/colors';
@@ -123,6 +124,9 @@ export default function AppLayout() {
       ) : needsTerms ? (
         <TermsGate />
       ) : null}
+
+      {/* Session enregistrée mais empreinte annulée au lancement. */}
+      <UnlockBanner />
 
       {/* L'arbre est monté DERRIÈRE les écrans bloquants, pas à leur place :
           le fil charge ses données pendant ce temps, et l'application est

@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import * as LocalAuthentication from 'expo-local-authentication';
 import Constants from 'expo-constants';
 import { Ionicons } from '@expo/vector-icons';
 
 import { useGoBack } from '@/hooks/useGoBack';
 import { useRouter } from 'expo-router';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Alert, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { HelpSheet } from '@/components/HelpSheet';
 import { Button } from '@/components/ui/Button';
@@ -17,6 +18,7 @@ import { findCountry } from '@/constants/countries';
 import { useCurrencyStore } from '@/hooks/useCurrency';
 import { useAppLanguage } from '@/lib/appLanguage';
 import { useOnboardingStore } from '@/store/onboarding.store';
+import { useAuthStore } from '@/store/auth.store';
 
 /**
  * Réglages.
@@ -45,6 +47,52 @@ export default function SettingsScreen() {
       : t('Non renseigné', 'Not set');
 
   const [aideOuverte, setAideOuverte] = useState(false);
+
+  /**
+   * Déverrouillage biométrique : réglable ici, à tout moment.
+   *
+   * Il n'était proposé qu'une fois, à la première connexion ; « Plus tard »
+   * voulait en fait dire « jamais », sans autre endroit pour l'activer.
+   * La ligne n'apparaît que si l'appareil a un capteur ET une empreinte ou un
+   * visage enregistré — un interrupteur qui ne peut rien activer n'a pas sa
+   * place.
+   */
+  const biometrieActive = useAuthStore((s) => s.biometricEnabled);
+  const activerBiometrie = useAuthStore((s) => s.enableBiometrics);
+  const desactiverBiometrie = useAuthStore((s) => s.disableBiometrics);
+  const [biometrie, setBiometrie] = useState<'aucune' | 'empreinte' | 'visage'>('aucune');
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+    void Promise.all([
+      LocalAuthentication.hasHardwareAsync(),
+      LocalAuthentication.isEnrolledAsync(),
+      LocalAuthentication.supportedAuthenticationTypesAsync(),
+    ])
+      .then(([materiel, enregistree, types]) => {
+        if (!materiel || !enregistree) return;
+        const visage = types.includes(LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION);
+        const doigt = types.includes(LocalAuthentication.AuthenticationType.FINGERPRINT);
+        setBiometrie(visage && !doigt ? 'visage' : 'empreinte');
+      })
+      .catch(() => undefined);
+  }, []);
+
+  const basculerBiometrie = (suivant: boolean) => {
+    if (!suivant) {
+      void desactiverBiometrie();
+      return;
+    }
+    // Activer demande l'empreinte tout de suite : on vérifie que c'est bien
+    // le propriétaire de l'appareil, et que le capteur répond.
+    void activerBiometrie().then((resultat) => {
+      if (resultat === 'failed' || resultat === 'unavailable') {
+        Alert.alert(
+          t('Activation impossible', 'Could not enable'),
+          t('Réessayez depuis votre appareil.', 'Please try again on your device.'),
+        );
+      }
+    });
+  };
   const [notifyOrders, setNotifyOrders] = useState(true);
   const [notifyMessages, setNotifyMessages] = useState(true);
   const [notifyTrips, setNotifyTrips] = useState(true);
@@ -187,6 +235,22 @@ export default function SettingsScreen() {
         ) : null}
 
         <SettingsGroup label={t('Sécurité', 'Security')} />
+        {biometrie !== 'aucune' ? (
+          <SettingsRow
+            icon={biometrie === 'visage' ? 'scan-outline' : 'finger-print-outline'}
+            title={
+              biometrie === 'visage'
+                ? t('Déverrouiller par le visage', 'Unlock with face')
+                : t('Déverrouiller par empreinte', 'Unlock with fingerprint')
+            }
+            subtitle={t(
+              "Demandé à l'ouverture de l'application",
+              'Asked when the app opens',
+            )}
+            value={biometrieActive}
+            onValueChange={basculerBiometrie}
+          />
+        ) : null}
         <SettingsRow
           icon="key-outline"
           title={t('Changer mon mot de passe', 'Change my password')}

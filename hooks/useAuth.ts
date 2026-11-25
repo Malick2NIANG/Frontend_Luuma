@@ -147,8 +147,8 @@ function offerBiometricSetup(
       Alert.alert(
         t('Déverrouillez Luuma plus rapidement', 'Unlock Luuma faster'),
         t(
-          'Utilisez Face ID, votre empreinte ou le code de votre appareil pour retrouver votre session.',
-          'Use Face ID, your fingerprint, or your device passcode to access your saved session.',
+          'Utilisez Face ID, votre empreinte ou le code de votre appareil pour retrouver votre session. Vous pourrez changer d’avis dans les Réglages.',
+          'Use Face ID, your fingerprint, or your device passcode to access your saved session. You can change this later in Settings.',
         ),
         [
           {

@@ -41,6 +41,15 @@ interface AuthState {
   hasSavedSession: boolean;
   biometricEnabled: boolean;
   biometricPrompted: boolean;
+  /**
+   * Une session est enregistrée sur l'appareil mais n'a pas été déverrouillée :
+   * la demande d'empreinte du lancement a été annulée ou a échoué.
+   *
+   * L'application reste alors utilisable en visiteur — on ne bloque pas le
+   * catalogue derrière un capteur — mais un bandeau propose de déverrouiller.
+   * Sans lui, annuler le prompt revenait à perdre sa session sans le savoir.
+   */
+  locked: boolean;
   /*
    * `isGuest` a été SUPPRIMÉ, et son absence dit la nouvelle règle.
    *
@@ -62,6 +71,10 @@ interface AuthState {
   unlockWithBiometrics: () => Promise<BiometricUnlockResult>;
   enableBiometrics: () => Promise<BiometricUnlockResult>;
   markBiometricPrompted: () => Promise<void>;
+  /** Désactive le déverrouillage biométrique (réglage de l'appareil). */
+  disableBiometrics: () => Promise<void>;
+  /** Le bandeau de déverrouillage a été écarté pour cette exécution. */
+  dismissLock: () => void;
 }
 
 async function authenticateForSession(): Promise<BiometricUnlockResult> {
@@ -96,6 +109,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   hasSavedSession: false,
   biometricEnabled: false,
   biometricPrompted: false,
+  locked: false,
   sessionEndReason: null,
 
   setAuth: (user, token) => {
@@ -108,6 +122,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       user,
       token,
       hasSavedSession: true,
+      locked: false,
       sessionEndReason: null,
     });
     const payload: StoredAuth = { user, token };
@@ -137,6 +152,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       user: null,
       token: null,
       hasSavedSession: false,
+      locked: false,
       sessionEndReason: reason,
     });
     secureStorage.removeItem(AUTH_STORAGE_KEY).catch((error: unknown) => {
@@ -184,7 +200,10 @@ export const useAuthStore = create<AuthState>((set) => ({
 
       if (needsBiometrics) {
         const result = await authenticateForSession();
-        if (result !== 'success') return;
+        if (result !== 'success') {
+          set({ locked: true });
+          return;
+        }
       }
 
       set({ user: stored.user, token: stored.token });
@@ -212,6 +231,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         token: stored.token,
         hasSavedSession: true,
         isHydrated: true,
+        locked: false,
       });
       return 'success';
     } catch (error) {
@@ -241,6 +261,19 @@ export const useAuthStore = create<AuthState>((set) => ({
       return 'failed';
     }
   },
+
+  disableBiometrics: async () => {
+    // L'état d'abord : l'interrupteur répond tout de suite, même si
+    // l'écriture sur l'appareil traîne.
+    set({ biometricEnabled: false });
+    try {
+      await secureStorage.removeItem(BIOMETRIC_ENABLED_KEY);
+    } catch (error) {
+      console.error('Unable to disable biometric authentication:', error);
+    }
+  },
+
+  dismissLock: () => set({ locked: false }),
 
   markBiometricPrompted: async () => {
     try {

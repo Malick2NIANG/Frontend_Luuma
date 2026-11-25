@@ -8,7 +8,9 @@ export function LanguageToggle({ light = false }: { light?: boolean }) {
     <View
       className={[
         'flex-row rounded-full border p-1',
-        light ? 'border-white/40 bg-white/10' : 'border-transparent bg-gray-100',
+        // Sur photo : un rail sombre, pour que le segment inactif reste lisible
+        // quelle que soit l'image derrière (ciel, tissu blanc…).
+        light ? 'border-white/40 bg-black/30' : 'border-transparent bg-gray-100',
       ].join(' ')}
     >
       {(['fr', 'en'] as const).map((option) => {
@@ -42,7 +44,7 @@ export function LanguageToggle({ light = false }: { light?: boolean }) {
             <Text
               className={[
                 'text-xs font-semibold tracking-wide',
-                selected ? 'text-gray-900' : 'text-gray-500',
+                selected ? 'text-gray-900' : light ? 'text-white' : 'text-gray-500',
               ].join(' ')}
             >
               {option.toUpperCase()}
